@@ -1,5 +1,6 @@
 import { PerformedSet, ProgressionInput, ProgressionRecommendation } from "./types";
 
+//TODO: add some description
 export function recommendDoubleProgression(
     input: ProgressionInput,
 ): ProgressionRecommendation {
