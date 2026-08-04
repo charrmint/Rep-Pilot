@@ -1,8 +1,4 @@
-//TODO: consider renaming
-export interface StrengthSet {
-    weight: number;
-    reps: number;
-}
+import { StrengthSet } from "./types";
 
 export function calculateSetVolume(set: StrengthSet): number {
     return set.weight * set.reps
