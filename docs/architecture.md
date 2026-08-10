@@ -130,6 +130,8 @@ The database stores facts:
 
 The database should not be the place where progression decisions are hidden. Recommendation rules should remain in tested TypeScript code, with enough input context stored so results can be reviewed later.
 
+The planned Phase 3 table model, relationships, enum values, RLS shape, and domain mapping are documented in [schema.md](./schema.md).
+
 ### Local Client State
 
 Local browser state should be used for short-lived workout resilience, not as the source of truth for completed history.
