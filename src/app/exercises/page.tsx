@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
@@ -5,6 +6,8 @@ import { LogoutButton } from "@/features/auth/logout-button";
 import { listAvailableExercises } from "@/features/exercises/exercise-service";
 
 export default async function ExercisesPage() {
+  await connection();
+
   const user = await getCurrentUser();
 
   if (!user) {

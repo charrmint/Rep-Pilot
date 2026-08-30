@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
@@ -5,6 +6,8 @@ import { getCurrentUser } from "@/features/auth/auth-server-service";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
+  await connection();
+
   const user = await getCurrentUser();
 
   if (user) {
