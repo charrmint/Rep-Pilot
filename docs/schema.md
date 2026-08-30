@@ -139,6 +139,7 @@ Columns:
 Notes:
 
 - A template is not the workout history source of truth. Actual workouts live in `workout_sessions`.
+- Template names are unique per user.
 
 ### `workout_template_exercises`
 
@@ -345,6 +346,7 @@ strength_record_value_unit:
 - Session exercise positions should be unique per workout session.
 - Set positions should be unique per workout session exercise.
 - A user should have at most one `in_progress` workout session.
+- Template names should be unique per user.
 
 ## RLS Shape
 
