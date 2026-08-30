@@ -2,9 +2,9 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
-import { LogoutButton } from "@/features/auth/logout-button";
 import { listExerciseLibrary } from "@/features/exercises/exercise-service";
 
+import { AppTopBar } from "../_shared/app-top-bar";
 import { CreateExerciseForm } from "./create-exercise-form";
 import { ExerciseList } from "./exercise-list";
 
@@ -23,7 +23,9 @@ export default async function ExercisesPage() {
   return (
     <main className="min-h-screen bg-gray-50 px-5 py-8">
       <section className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <header className="flex items-start justify-between gap-4">
+        <AppTopBar activeSection="exercises" userEmail={user.email} />
+
+        <header>
           <div>
             <p className="text-sm font-medium uppercase tracking-wide text-gray-500">
               Exercise Library
@@ -35,11 +37,7 @@ export default async function ExercisesPage() {
               System exercises are shared defaults. Custom exercises belong to
               your account and can be archived when you no longer use them.
             </p>
-            {user.email ? (
-              <p className="mt-2 text-sm text-gray-600">{user.email}</p>
-            ) : null}
           </div>
-          <LogoutButton />
         </header>
 
         <CreateExerciseForm />

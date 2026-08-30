@@ -2,8 +2,8 @@
 
 import { useActionState } from "react";
 
+import { INITIAL_FORM_ACTION_STATE } from "../_shared/form-action-state";
 import { setCustomExerciseArchiveStatusAction } from "./actions";
-import { INITIAL_FORM_ACTION_STATE } from "./form-state";
 
 interface ExerciseArchiveControlProps {
   exerciseId: string;

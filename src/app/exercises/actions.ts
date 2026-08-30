@@ -9,7 +9,7 @@ import {
   setCustomExerciseArchiveStatus,
 } from "@/features/exercises/exercise-service";
 
-import type { FormActionState } from "./form-state";
+import type { FormActionState } from "../_shared/form-action-state";
 
 export async function createCustomExerciseAction(
   _previousState: FormActionState,

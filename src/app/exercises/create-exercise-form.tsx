@@ -2,8 +2,8 @@
 
 import { useActionState, useEffect, useRef } from "react";
 
+import { INITIAL_FORM_ACTION_STATE } from "../_shared/form-action-state";
 import { createCustomExerciseAction } from "./actions";
-import { INITIAL_FORM_ACTION_STATE } from "./form-state";
 
 export function CreateExerciseForm() {
   const formRef = useRef<HTMLFormElement>(null);
