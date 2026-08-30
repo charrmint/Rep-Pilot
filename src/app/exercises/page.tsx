@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
 import { LogoutButton } from "@/features/auth/logout-button";
-import { listAvailableExercises } from "@/features/exercises/exercise-service";
+import { listExerciseLibrary } from "@/features/exercises/exercise-service";
+
+import { CreateExerciseForm } from "./create-exercise-form";
+import { ExerciseList } from "./exercise-list";
 
 export default async function ExercisesPage() {
   await connection();
@@ -14,7 +17,8 @@ export default async function ExercisesPage() {
     redirect("/login");
   }
 
-  const exercises = await listAvailableExercises();
+  const { activeExercises, archivedCustomExercises } =
+    await listExerciseLibrary();
 
   return (
     <main className="min-h-screen bg-gray-50 px-5 py-8">
@@ -27,6 +31,10 @@ export default async function ExercisesPage() {
             <h1 className="mt-2 text-3xl font-semibold text-gray-950">
               Strength exercises
             </h1>
+            <p className="mt-3 max-w-2xl text-base text-gray-600">
+              System exercises are shared defaults. Custom exercises belong to
+              your account and can be archived when you no longer use them.
+            </p>
             {user.email ? (
               <p className="mt-2 text-sm text-gray-600">{user.email}</p>
             ) : null}
@@ -34,29 +42,21 @@ export default async function ExercisesPage() {
           <LogoutButton />
         </header>
 
-        {exercises.length === 0 ? (
-          <div className="rounded-md border border-gray-200 bg-white px-4 py-5 text-sm text-gray-600">
-            No exercises found.
-          </div>
-        ) : null}
+        <CreateExerciseForm />
 
-        {exercises.length > 0 ? (
-          <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
-            {exercises.map((exercise) => (
-              <li
-                key={exercise.id}
-                className="flex items-center justify-between gap-4 px-4 py-3"
-              >
-                <span className="font-medium text-gray-950">{exercise.name}</span>
-                {exercise.isSystemExercise ? (
-                  <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
-                    System
-                  </span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        <ExerciseList
+          title="Active library"
+          description="These exercises are available when building workout templates."
+          emptyMessage="No active exercises found."
+          exercises={activeExercises}
+        />
+
+        <ExerciseList
+          title="Archived custom exercises"
+          description="Archived exercises stay out of new templates but can be restored."
+          emptyMessage="No archived custom exercises."
+          exercises={archivedCustomExercises}
+        />
       </section>
     </main>
   );
