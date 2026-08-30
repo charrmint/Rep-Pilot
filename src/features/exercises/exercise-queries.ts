@@ -71,7 +71,8 @@ export async function updateCustomExerciseArchiveStatusRow({
     .update(update)
     .eq("id", exerciseId)
     .eq("user_id", userId)
-    .select("*");
+    .select("*")
+    .maybeSingle();
 
   if (error) {
     throw _toExerciseMutationError(
@@ -80,13 +81,11 @@ export async function updateCustomExerciseArchiveStatusRow({
     );
   }
 
-  const updatedExercise = data?.[0];
-
-  if (!updatedExercise) {
+  if (!data) {
     throw new Error("Custom exercise not found.");
   }
 
-  return updatedExercise;
+  return data;
 }
 
 function _toExerciseMutationError(

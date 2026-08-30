@@ -28,7 +28,7 @@ export function LoginForm() {
     try {
       if (mode === "sign_in") {
         await signInWithPassword({ email, password });
-        router.replace("/exercises");
+        router.replace("/templates");
         router.refresh();
         return;
       }
@@ -36,7 +36,7 @@ export function LoginForm() {
       const result = await signUpWithPassword({ email, password });
 
       if (result.hasSession) {
-        router.replace("/exercises");
+        router.replace("/templates");
         router.refresh();
         return;
       }
