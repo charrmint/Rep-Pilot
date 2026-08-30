@@ -3,12 +3,12 @@
 import { useActionState, useEffect, useRef } from "react";
 
 import { INITIAL_FORM_ACTION_STATE } from "../_shared/form-action-state";
-import { createCustomExerciseAction } from "./actions";
+import { createWorkoutTemplateAction } from "./actions";
 
-export function CreateExerciseForm() {
+export function CreateTemplateForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, isPending] = useActionState(
-    createCustomExerciseAction,
+    createWorkoutTemplateAction,
     INITIAL_FORM_ACTION_STATE,
   );
 
@@ -26,13 +26,13 @@ export function CreateExerciseForm() {
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <label className="flex flex-1 flex-col gap-2 text-sm font-medium text-gray-800">
-          Custom exercise
+          Template name
           <input
             name="name"
             type="text"
             required
             maxLength={80}
-            placeholder="Cable row"
+            placeholder="Upper A"
             className="min-h-12 rounded-md border border-gray-300 px-3 text-base text-gray-950 outline-none transition focus:border-gray-950"
           />
         </label>
@@ -42,7 +42,7 @@ export function CreateExerciseForm() {
           disabled={isPending}
           className="min-h-12 rounded-md bg-gray-950 px-4 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {isPending ? "Adding..." : "Add exercise"}
+          {isPending ? "Creating..." : "Create template"}
         </button>
       </div>
 

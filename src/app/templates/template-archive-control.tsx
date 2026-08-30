@@ -3,26 +3,26 @@
 import { useActionState } from "react";
 
 import { INITIAL_FORM_ACTION_STATE } from "../_shared/form-action-state";
-import { setCustomExerciseArchiveStatusAction } from "./actions";
+import { setWorkoutTemplateArchiveStatusAction } from "./actions";
 
-interface ExerciseArchiveControlProps {
-  exerciseId: string;
+interface TemplateArchiveControlProps {
+  templateId: string;
   isArchived: boolean;
 }
 
-export function ExerciseArchiveControl({
-  exerciseId,
+export function TemplateArchiveControl({
+  templateId,
   isArchived,
-}: ExerciseArchiveControlProps) {
+}: TemplateArchiveControlProps) {
   const [state, formAction, isPending] = useActionState(
-    setCustomExerciseArchiveStatusAction,
+    setWorkoutTemplateArchiveStatusAction,
     INITIAL_FORM_ACTION_STATE,
   );
   const nextIsArchived = !isArchived;
 
   return (
     <form action={formAction} className="flex flex-col items-end gap-2">
-      <input type="hidden" name="exerciseId" value={exerciseId} />
+      <input type="hidden" name="templateId" value={templateId} />
       <input
         type="hidden"
         name="isArchived"

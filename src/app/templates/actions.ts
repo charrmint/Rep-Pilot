@@ -3,15 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import type { FormActionState } from "../_shared/form-action-state";
 import { getCurrentUser } from "@/features/auth/auth-server-service";
 import {
-  createCustomExercise,
-  setCustomExerciseArchiveStatus,
-} from "@/features/exercises/exercise-service";
+  createWorkoutTemplate,
+  setWorkoutTemplateArchiveStatus,
+} from "@/features/templates/template-service";
 
-import type { FormActionState } from "../_shared/form-action-state";
-
-export async function createCustomExerciseAction(
+export async function createWorkoutTemplateAction(
   _previousState: FormActionState,
   formData: FormData,
 ): Promise<FormActionState> {
@@ -22,22 +21,22 @@ export async function createCustomExerciseAction(
   }
 
   try {
-    await createCustomExercise({
+    await createWorkoutTemplate({
       userId: user.id,
       name: _readStringFormValue(formData, "name"),
     });
-    revalidatePath("/exercises");
+    revalidatePath("/templates");
 
     return {
       status: "success",
-      message: "Exercise added.",
+      message: "Template created.",
     };
   } catch (error) {
     return _toFormActionError(error);
   }
 }
 
-export async function setCustomExerciseArchiveStatusAction(
+export async function setWorkoutTemplateArchiveStatusAction(
   _previousState: FormActionState,
   formData: FormData,
 ): Promise<FormActionState> {
@@ -47,17 +46,19 @@ export async function setCustomExerciseArchiveStatusAction(
     redirect("/login");
   }
 
+  const isArchived = _readBooleanFormValue(formData, "isArchived");
+
   try {
-    await setCustomExerciseArchiveStatus({
+    await setWorkoutTemplateArchiveStatus({
       userId: user.id,
-      exerciseId: _readStringFormValue(formData, "exerciseId"),
-      isArchived: _readBooleanFormValue(formData, "isArchived"),
+      templateId: _readStringFormValue(formData, "templateId"),
+      isArchived,
     });
-    revalidatePath("/exercises");
+    revalidatePath("/templates");
 
     return {
       status: "success",
-      message: "Exercise updated.",
+      message: isArchived ? "Template archived." : "Template restored.",
     };
   } catch (error) {
     return _toFormActionError(error);
@@ -77,6 +78,7 @@ function _readBooleanFormValue(formData: FormData, name: string): boolean {
 function _toFormActionError(error: unknown): FormActionState {
   return {
     status: "error",
-    message: error instanceof Error ? error.message : "Exercise update failed.",
+    message:
+      error instanceof Error ? error.message : "Template update failed.",
   };
 }
