@@ -166,6 +166,7 @@ Notes:
 - This is a one-to-many relationship from `workout_templates` to `workout_template_exercises`.
 - The same `template_id` appears in multiple rows, one row per planned exercise block.
 - Position should be unique per template.
+- An exercise should appear only once per template in the MVP.
 
 ### `workout_sessions`
 
@@ -343,6 +344,7 @@ strength_record_value_unit:
 - `difficulty` must be between `1` and `10` when present.
 - `completed_at` should be present when `status = completed`.
 - Template exercise positions should be unique per template.
+- Template exercise selections should be unique per template.
 - Session exercise positions should be unique per workout session.
 - Set positions should be unique per workout session exercise.
 - A user should have at most one `in_progress` workout session.
