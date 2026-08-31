@@ -11,6 +11,14 @@ export function kilogramsToPounds(kilograms: number): number {
     return kilograms * KG_TO_LB;
 }
 
+export function normalizeWeightToPounds(value: number, unit: WeightUnit): number {
+    if (unit === "lb") {
+        return _roundWeight(value);
+    }
+
+    return _roundWeight(kilogramsToPounds(value));
+}
+
 export function roundToIncrement(value: number, increment: number): number {
     if (increment <= 0) {
         //TODO: define error type
@@ -19,4 +27,8 @@ export function roundToIncrement(value: number, increment: number): number {
 
     const res = Math.round(value/increment) * increment;
     return Number(res.toFixed(WEIGHT_DECIMAL_PLACES));
+}
+
+function _roundWeight(value: number): number {
+    return Number(value.toFixed(WEIGHT_DECIMAL_PLACES));
 }

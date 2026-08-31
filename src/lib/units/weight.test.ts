@@ -1,5 +1,6 @@
 import {
   kilogramsToPounds,
+  normalizeWeightToPounds,
   poundsToKilograms,
   roundToIncrement,
 } from "./weight";
@@ -55,4 +56,15 @@ describe("weight unit helpers", () => {
       );
     });
   });
+
+  describe("normalizeWeightToPounds", () => {
+    it("returns rounded pounds for pound values", () => {
+      expect(normalizeWeightToPounds(135.555, "lb")).toBe(135.56);
+    });
+
+    it("converts and rounds kilogram values to pounds", () => {
+      expect(normalizeWeightToPounds(100, "kg")).toBe(220);
+    });
+  });
+
 });
