@@ -1,4 +1,4 @@
-export type WeightUnit = "lb" | "kg";
+import type { WeightUnit } from "./types";
 
 const KG_TO_LB = 2.2;
 const WEIGHT_DECIMAL_PLACES = 2;

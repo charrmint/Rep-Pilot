@@ -1,4 +1,4 @@
-import type { WeightUnit } from "@/lib/units/weight";
+import type { WeightUnit } from "@/lib/units/types";
 
 export function readStringFormValue(formData: FormData, name: string): string {
   const value = formData.get(name);
