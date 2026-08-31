@@ -10,6 +10,7 @@ import {
 } from "@/features/exercises/exercise-service";
 
 import type { FormActionState } from "../_shared/form-action-state";
+import { readStringFormValue } from "../_shared/form-values";
 
 export async function createCustomExerciseAction(
   _previousState: FormActionState,
@@ -24,7 +25,7 @@ export async function createCustomExerciseAction(
   try {
     await createCustomExercise({
       userId: user.id,
-      name: _readStringFormValue(formData, "name"),
+      name: readStringFormValue(formData, "name"),
     });
     revalidatePath("/exercises");
 
@@ -50,8 +51,8 @@ export async function setCustomExerciseArchiveStatusAction(
   try {
     await setCustomExerciseArchiveStatus({
       userId: user.id,
-      exerciseId: _readStringFormValue(formData, "exerciseId"),
-      isArchived: _readBooleanFormValue(formData, "isArchived"),
+      exerciseId: readStringFormValue(formData, "exerciseId"),
+      isArchived: readStringFormValue(formData, "isArchived") === "true",
     });
     revalidatePath("/exercises");
 
@@ -62,16 +63,6 @@ export async function setCustomExerciseArchiveStatusAction(
   } catch (error) {
     return _toFormActionError(error);
   }
-}
-
-function _readStringFormValue(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  return typeof value === "string" ? value : "";
-}
-
-function _readBooleanFormValue(formData: FormData, name: string): boolean {
-  return _readStringFormValue(formData, name) === "true";
 }
 
 function _toFormActionError(error: unknown): FormActionState {

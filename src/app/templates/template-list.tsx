@@ -1,12 +1,15 @@
-import type { WorkoutTemplate } from "@/features/templates/types";
+import Link from "next/link";
+
+import type { WorkoutTemplateDetails } from "@/features/templates/types";
 
 import { TemplateArchiveControl } from "./template-archive-control";
+import { TemplateExercisePreview } from "./template-exercise-preview";
 
 interface TemplateListProps {
   title: string;
   description: string;
   emptyMessage: string;
-  templates: WorkoutTemplate[];
+  templates: WorkoutTemplateDetails[];
 }
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -37,35 +40,59 @@ export function TemplateList({
           {templates.map((template) => (
             <li
               key={template.id}
-              className="flex items-center justify-between gap-4 px-4 py-3"
+              className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between"
             >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-gray-950">
-                  {template.name}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
-                  <span
-                    className={`rounded-full px-2 py-1 text-xs font-medium ${
-                      template.isArchived
-                        ? "bg-amber-50 text-amber-700"
-                        : "bg-green-50 text-green-700"
-                    }`}
-                  >
-                    {template.isArchived ? "Archived" : "Active"}
-                  </span>
-                  <time
-                    dateTime={template.updatedAt}
-                    className="text-xs text-gray-500"
-                  >
-                    Updated {_formatTemplateDate(template.updatedAt)}
-                  </time>
-                </div>
-              </div>
+              <details className="min-w-0 flex-1">
+                <summary className="cursor-pointer list-none rounded-md outline-none transition focus-visible:ring-2 focus-visible:ring-gray-950">
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-gray-950">
+                        {template.name}
+                      </p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${
+                            template.isArchived
+                              ? "bg-amber-50 text-amber-700"
+                              : "bg-green-50 text-green-700"
+                          }`}
+                        >
+                          {template.isArchived ? "Archived" : "Active"}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {_formatExerciseCount(template.exercises.length)}
+                        </span>
+                        <time
+                          dateTime={template.updatedAt}
+                          className="text-xs text-gray-500"
+                        >
+                          Updated {_formatTemplateDate(template.updatedAt)}
+                        </time>
+                      </div>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium text-gray-500">
+                      View
+                    </span>
+                  </div>
+                </summary>
 
-              <TemplateArchiveControl
-                templateId={template.id}
-                isArchived={template.isArchived}
-              />
+                <TemplateExercisePreview exercises={template.exercises} />
+              </details>
+
+              <div className="flex shrink-0 items-start gap-2 sm:justify-end">
+                {!template.isArchived ? (
+                  <Link
+                    href={`/templates/${template.id}/edit`}
+                    className="min-h-10 rounded-md bg-gray-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
+                  >
+                    Edit
+                  </Link>
+                ) : null}
+                <TemplateArchiveControl
+                  templateId={template.id}
+                  isArchived={template.isArchived}
+                />
+              </div>
             </li>
           ))}
         </ul>
@@ -76,4 +103,12 @@ export function TemplateList({
 
 function _formatTemplateDate(date: string): string {
   return DATE_FORMATTER.format(new Date(date));
+}
+
+function _formatExerciseCount(count: number): string {
+  if (count === 1) {
+    return "1 exercise";
+  }
+
+  return `${count} exercises`;
 }

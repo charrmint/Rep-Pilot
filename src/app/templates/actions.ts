@@ -10,6 +10,8 @@ import {
   setWorkoutTemplateArchiveStatus,
 } from "@/features/templates/template-service";
 
+import { readStringFormValue } from "../_shared/form-values";
+
 export async function createWorkoutTemplateAction(
   _previousState: FormActionState,
   formData: FormData,
@@ -20,20 +22,20 @@ export async function createWorkoutTemplateAction(
     redirect("/login");
   }
 
-  try {
-    await createWorkoutTemplate({
-      userId: user.id,
-      name: _readStringFormValue(formData, "name"),
-    });
-    revalidatePath("/templates");
+  let templateId: string;
 
-    return {
-      status: "success",
-      message: "Template created.",
-    };
+  try {
+    const template = await createWorkoutTemplate({
+      userId: user.id,
+      name: readStringFormValue(formData, "name"),
+    });
+    templateId = template.id;
+    revalidatePath("/templates");
   } catch (error) {
     return _toFormActionError(error);
   }
+
+  redirect(`/templates/${templateId}/edit`);
 }
 
 export async function setWorkoutTemplateArchiveStatusAction(
@@ -46,12 +48,12 @@ export async function setWorkoutTemplateArchiveStatusAction(
     redirect("/login");
   }
 
-  const isArchived = _readBooleanFormValue(formData, "isArchived");
+  const isArchived = readStringFormValue(formData, "isArchived") === "true";
 
   try {
     await setWorkoutTemplateArchiveStatus({
       userId: user.id,
-      templateId: _readStringFormValue(formData, "templateId"),
+      templateId: readStringFormValue(formData, "templateId"),
       isArchived,
     });
     revalidatePath("/templates");
@@ -63,16 +65,6 @@ export async function setWorkoutTemplateArchiveStatusAction(
   } catch (error) {
     return _toFormActionError(error);
   }
-}
-
-function _readStringFormValue(formData: FormData, name: string): string {
-  const value = formData.get(name);
-
-  return typeof value === "string" ? value : "";
-}
-
-function _readBooleanFormValue(formData: FormData, name: string): boolean {
-  return _readStringFormValue(formData, name) === "true";
 }
 
 function _toFormActionError(error: unknown): FormActionState {
