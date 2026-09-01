@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import type { WorkoutSessionExercise, WorkoutSet } from "../types";
+import { PreviousExercisePerformance } from "./previous-exercise-performance";
 import { WorkoutSetRow } from "./workout-set-row";
 
 interface WorkoutExerciseCardProps {
@@ -58,6 +59,11 @@ export function WorkoutExerciseCard({
           {exercise.sets.length}/{exercise.targetSets} logged
         </span>
       </div>
+
+      <PreviousExercisePerformance
+        exerciseName={exercise.exerciseName}
+        performance={exercise.previousPerformance}
+      />
 
       <ol className="mt-4 flex flex-col gap-2">
         {positions.map((position) => {
