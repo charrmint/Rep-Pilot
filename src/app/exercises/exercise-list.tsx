@@ -1,7 +1,9 @@
 import Link from "next/link";
 
 import type { Exercise } from "@/features/exercises/types";
+import type { WorkoutTemplateDetails } from "@/features/templates/types";
 
+import { AddExerciseToTemplateControl } from "./add-exercise-to-template-control";
 import { ExerciseArchiveControl } from "./exercise-archive-control";
 
 interface ExerciseListProps {
@@ -9,6 +11,8 @@ interface ExerciseListProps {
   description: string;
   emptyMessage: string;
   exercises: Exercise[];
+  activeTemplates: WorkoutTemplateDetails[];
+  allowTemplateAssignment?: boolean;
 }
 
 export function ExerciseList({
@@ -16,6 +20,8 @@ export function ExerciseList({
   description,
   emptyMessage,
   exercises,
+  activeTemplates,
+  allowTemplateAssignment = false,
 }: ExerciseListProps) {
   return (
     <section className="flex flex-col gap-3">
@@ -31,15 +37,12 @@ export function ExerciseList({
       ) : (
         <ul className="divide-y divide-gray-200 rounded-md border border-gray-200 bg-white">
           {exercises.map((exercise) => (
-            <li
-              key={exercise.id}
-              className="flex items-center justify-between gap-4 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-gray-950">
+            <li key={exercise.id} className="px-4 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <p className="min-w-0 flex-1 truncate font-medium text-gray-950">
                   {exercise.name}
                 </p>
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="flex shrink-0 flex-wrap justify-end gap-2">
                   {exercise.isSystemExercise ? (
                     <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600">
                       System
@@ -57,13 +60,19 @@ export function ExerciseList({
                 </div>
               </div>
 
-              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+              <div className="mt-4 flex flex-wrap items-start gap-2">
                 <Link
                   href={`/workouts/exercises/${exercise.id}`}
-                  className="min-h-10 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-500 hover:text-gray-950"
+                  className="flex min-h-10 items-center justify-center rounded-md border border-gray-300 px-3 text-sm font-semibold text-gray-700 transition hover:border-gray-500 hover:text-gray-950"
                 >
                   History
                 </Link>
+                {allowTemplateAssignment ? (
+                  <AddExerciseToTemplateControl
+                    exerciseId={exercise.id}
+                    templates={activeTemplates}
+                  />
+                ) : null}
                 {exercise.isSystemExercise ? null : (
                   <ExerciseArchiveControl
                     exerciseId={exercise.id}
