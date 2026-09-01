@@ -20,6 +20,14 @@ export type WorkoutSessionRowWithTemplate = WorkoutSessionRow & {
   template: Pick<WorkoutTemplateRow, "name"> | null;
 };
 
+export type PreviousWorkoutSessionExerciseRow = Pick<
+  WorkoutSessionExerciseRow,
+  "exercise_id" | "id" | "workout_session_id"
+> & {
+  workoutSession: Pick<WorkoutSessionRow, "started_at">;
+  sets: WorkoutSetRow[];
+};
+
 export interface ActiveWorkoutSummary {
   id: string;
   templateName: string;
@@ -36,6 +44,13 @@ export interface WorkoutSet {
   performedAt: string;
 }
 
+export interface PreviousExercisePerformance {
+  workoutSessionId: string;
+  workoutSessionExerciseId: string;
+  startedAt: string;
+  sets: WorkoutSet[];
+}
+
 export interface WorkoutSessionExercise {
   id: string;
   exerciseId: string;
@@ -48,6 +63,7 @@ export interface WorkoutSessionExercise {
   plannedWeightUnit: WeightUnit;
   plannedNormalizedWeightLbs: number;
   weightIncrementLbs: number;
+  previousPerformance: PreviousExercisePerformance | null;
   sets: WorkoutSet[];
 }
 
