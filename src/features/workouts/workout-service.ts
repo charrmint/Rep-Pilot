@@ -1,4 +1,8 @@
 import {
+  mapExerciseHistoryPerformanceRows,
+  mapExerciseHistorySummaryRows,
+  mapTemplateHistorySummaryRows,
+  mapWorkoutHistorySessionRows,
   mapWorkoutSessionRowsToWorkoutSession,
   mapWorkoutSessionRowToActiveWorkoutSummary,
   mapWorkoutSetRowToWorkoutSet,
@@ -7,9 +11,15 @@ import {
   createWorkoutSetRow,
   deleteWorkoutSetRow,
   getActiveWorkoutSessionRow,
+  getExerciseHistorySubjectRow,
   getWorkoutSessionExerciseRow,
+  getWorkoutHistoryTemplateRow,
   getWorkoutSessionRow,
+  listExerciseHistoryPerformanceRows,
+  listExerciseHistorySummaryRows,
   listPreviousWorkoutSessionExerciseRows,
+  listTemplateHistorySummaryRows,
+  listWorkoutHistorySessionRows,
   listWorkoutSessionExerciseRows,
   listWorkoutSetRows,
   startWorkoutSession,
@@ -19,13 +29,27 @@ import {
 import type {
   ActiveWorkoutSummary,
   DeleteWorkoutSetInput,
+  ExerciseHistory,
+  ExerciseHistorySummary,
+  PaginatedHistory,
   SaveWorkoutSetInput,
   StartWorkoutInput,
+  TemplateHistory,
+  TemplateHistorySummary,
+  WorkoutHistorySession,
   WorkoutSession,
   WorkoutSessionExerciseRow,
   WorkoutSet,
 } from "./types";
+import {
+  createPaginatedHistory,
+  getWorkoutHistoryOffset,
+} from "./workout-history";
 import { validateWorkoutSetInput } from "./workout-validation";
+
+const RECENT_WORKOUT_PAGE_SIZE = 10;
+const TEMPLATE_WORKOUT_PAGE_SIZE = 3;
+const EXERCISE_PERFORMANCE_PAGE_SIZE = 10;
 
 export async function getActiveWorkout(
   userId: string,
@@ -72,6 +96,111 @@ export async function getWorkoutSession({
     setRows,
     previousExerciseRows,
   );
+}
+
+export async function listRecentWorkoutHistory({
+  userId,
+  page,
+}: {
+  userId: string;
+  page: number;
+}): Promise<PaginatedHistory<WorkoutHistorySession>> {
+  const rows = await listWorkoutHistorySessionRows({
+    userId,
+    offset: getWorkoutHistoryOffset(page, RECENT_WORKOUT_PAGE_SIZE),
+    limit: RECENT_WORKOUT_PAGE_SIZE + 1,
+  });
+
+  return createPaginatedHistory({
+    items: mapWorkoutHistorySessionRows(rows),
+    page,
+    pageSize: RECENT_WORKOUT_PAGE_SIZE,
+  });
+}
+
+export async function listTemplateHistorySummaries(
+  userId: string,
+): Promise<TemplateHistorySummary[]> {
+  const rows = await listTemplateHistorySummaryRows(userId);
+
+  return mapTemplateHistorySummaryRows(rows);
+}
+
+export async function getTemplateHistory({
+  userId,
+  templateId,
+  page,
+}: {
+  userId: string;
+  templateId: string;
+  page: number;
+}): Promise<TemplateHistory | null> {
+  const templateRow = await getWorkoutHistoryTemplateRow({ userId, templateId });
+
+  if (!templateRow) {
+    return null;
+  }
+
+  const rows = await listWorkoutHistorySessionRows({
+    userId,
+    templateId,
+    offset: getWorkoutHistoryOffset(page, TEMPLATE_WORKOUT_PAGE_SIZE),
+    limit: TEMPLATE_WORKOUT_PAGE_SIZE + 1,
+  });
+
+  return {
+    template: {
+      id: templateRow.id,
+      name: templateRow.name,
+      isArchived: templateRow.is_archived,
+    },
+    workouts: createPaginatedHistory({
+      items: mapWorkoutHistorySessionRows(rows),
+      page,
+      pageSize: TEMPLATE_WORKOUT_PAGE_SIZE,
+    }),
+  };
+}
+
+export async function listExerciseHistorySummaries(
+  userId: string,
+): Promise<ExerciseHistorySummary[]> {
+  const rows = await listExerciseHistorySummaryRows(userId);
+
+  return mapExerciseHistorySummaryRows(rows);
+}
+
+export async function getExerciseHistory({
+  userId,
+  exerciseId,
+  page,
+}: {
+  userId: string;
+  exerciseId: string;
+  page: number;
+}): Promise<ExerciseHistory | null> {
+  const subjectRow = await getExerciseHistorySubjectRow(exerciseId);
+
+  if (!subjectRow) {
+    return null;
+  }
+
+  const rows = await listExerciseHistoryPerformanceRows({
+    userId,
+    exerciseId,
+    offset: getWorkoutHistoryOffset(page, EXERCISE_PERFORMANCE_PAGE_SIZE),
+    limit: EXERCISE_PERFORMANCE_PAGE_SIZE + 1,
+  });
+
+  return {
+    exerciseId: subjectRow.id,
+    exerciseName: subjectRow.name,
+    performances: createPaginatedHistory({
+      items: mapExerciseHistoryPerformanceRows(rows),
+      page,
+      pageSize: EXERCISE_PERFORMANCE_PAGE_SIZE,
+    }),
+  };
 }
 
 export async function startWorkout(input: StartWorkoutInput): Promise<string> {
