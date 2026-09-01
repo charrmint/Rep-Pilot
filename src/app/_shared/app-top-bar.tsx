@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { LogoutButton } from "@/features/auth/logout-button";
 
-export type AppSection = "templates" | "exercises" | "workout";
+export type AppSection = "templates" | "exercises" | "history" | "workout";
 
 interface AppTopBarProps {
   activeSection: AppSection;
@@ -12,6 +12,7 @@ interface AppTopBarProps {
 const NAV_ITEMS: Array<{ href: string; label: string; section: AppSection }> = [
   { href: "/templates", label: "Templates", section: "templates" },
   { href: "/exercises", label: "Exercises", section: "exercises" },
+  { href: "/workouts", label: "History", section: "history" },
 ];
 
 export function AppTopBar({ activeSection, userEmail }: AppTopBarProps) {
