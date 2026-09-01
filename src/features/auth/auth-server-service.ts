@@ -17,3 +17,18 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
 
   return data.user;
 }
+
+export async function signInAnonymously(): Promise<AuthUser> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInAnonymously();
+
+  if (error) {
+    throw new Error(`Failed to start demo session: ${error.message}`);
+  }
+
+  if (!data.user) {
+    throw new Error("Failed to start demo session.");
+  }
+
+  return data.user;
+}
