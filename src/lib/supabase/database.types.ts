@@ -468,6 +468,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      provision_demo_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       start_workout_from_template: {
         Args: {
           p_active_session_id_to_cancel?: string | null
