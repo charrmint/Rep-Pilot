@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import type { WorkoutTemplateDetails } from "@/features/templates/types";
+import { StartWorkoutControl } from "@/features/workouts/components/start-workout-control";
+import type { ActiveWorkoutSummary } from "@/features/workouts/types";
 
 import { TemplateArchiveControl } from "./template-archive-control";
 import { TemplateExercisePreview } from "./template-exercise-preview";
@@ -10,6 +12,7 @@ interface TemplateListProps {
   description: string;
   emptyMessage: string;
   templates: WorkoutTemplateDetails[];
+  activeWorkout: ActiveWorkoutSummary | null;
 }
 
 const DATE_FORMATTER = new Intl.DateTimeFormat("en-US", {
@@ -23,6 +26,7 @@ export function TemplateList({
   description,
   emptyMessage,
   templates,
+  activeWorkout,
 }: TemplateListProps) {
   return (
     <section className="flex flex-col gap-3">
@@ -79,14 +83,21 @@ export function TemplateList({
                 <TemplateExercisePreview exercises={template.exercises} />
               </details>
 
-              <div className="flex shrink-0 items-start gap-2 sm:justify-end">
+              <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
                 {!template.isArchived ? (
-                  <Link
-                    href={`/templates/${template.id}/edit`}
-                    className="min-h-10 rounded-md bg-gray-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
-                  >
-                    Edit
-                  </Link>
+                  <>
+                    <StartWorkoutControl
+                      templateId={template.id}
+                      hasExercises={template.exercises.length > 0}
+                      activeWorkout={activeWorkout}
+                    />
+                    <Link
+                      href={`/templates/${template.id}/edit`}
+                      className="min-h-10 rounded-md bg-gray-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-gray-800"
+                    >
+                      Edit
+                    </Link>
+                  </>
                 ) : null}
                 <TemplateArchiveControl
                   templateId={template.id}
