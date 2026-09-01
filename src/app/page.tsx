@@ -2,25 +2,19 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="min-h-screen px-6 py-10">
-      <h1 className="text-3xl font-semibold">RepPilot</h1>
-      <p className="mt-3 max-w-xl text-lg text-gray-600">
-        Log the workout. Know what to do next.
-      </p>
-      <div className="mt-6 flex flex-wrap gap-3">
+    <main className="grid min-h-screen place-items-center px-6 py-10">
+      <section className="flex w-full max-w-xl flex-col items-center text-center">
+        <h1 className="text-4xl font-semibold tracking-tight">RepPilot</h1>
+        <p className="mt-3 text-lg text-gray-600">
+          Log the workout. Know what to do next.
+        </p>
         <Link
-          href="/templates"
-          className="rounded-md bg-gray-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
+          href="/login"
+          className="mt-7 rounded-md bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800"
         >
-          Open templates
+          Get started
         </Link>
-        <Link
-          href="/exercises"
-          className="rounded-md border border-gray-300 px-4 py-3 text-sm font-semibold text-gray-700 transition hover:border-gray-400 hover:text-gray-950"
-        >
-          Exercise library
-        </Link>
-      </div>
+      </section>
     </main>
   );
 }
