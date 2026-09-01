@@ -84,6 +84,12 @@ export function TemplateList({
               </details>
 
               <div className="flex w-full flex-wrap items-start gap-2 sm:w-auto sm:shrink-0 sm:justify-end">
+                <Link
+                  href={`/workouts/templates/${template.id}`}
+                  className="min-h-10 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-500 hover:text-gray-950"
+                >
+                  History
+                </Link>
                 {!template.isArchived ? (
                   <>
                     <StartWorkoutControl
