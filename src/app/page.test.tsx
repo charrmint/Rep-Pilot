@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import Home from "./page";
 
 describe("Home", () => {
-  it("renders the RepPilot placeholder", () => {
+  it("renders one clear entry point", () => {
     render(<Home />);
 
     expect(
@@ -12,5 +12,9 @@ describe("Home", () => {
     expect(
       screen.getByText("Log the workout. Know what to do next."),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Start demo" })).toBeEnabled();
+    expect(
+      screen.getByRole("link", { name: "Sign in" }),
+    ).toHaveAttribute("href", "/login");
   });
 });

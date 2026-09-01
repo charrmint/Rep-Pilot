@@ -22,9 +22,9 @@ export function AppTopBar({ activeSection, userEmail }: AppTopBarProps) {
         <Link href="/templates" className="text-xl font-semibold text-gray-950">
           RepPilot
         </Link>
-        {userEmail ? (
-          <p className="mt-1 truncate text-sm text-gray-600">{userEmail}</p>
-        ) : null}
+        <p className="mt-1 truncate text-sm text-gray-600">
+          {userEmail ?? "Demo mode"}
+        </p>
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

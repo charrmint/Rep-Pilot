@@ -50,7 +50,8 @@ Deferred from MVP:
 ## Architectural Shape
 
 - `src/app`: routes, layouts, page composition, loading states, and navigation.
-- `src/features`: product feature modules such as workouts, exercises, progression, records, and analytics.
+- `src/features`: product feature modules such as workouts, exercises,
+  progression, and records.
 - `src/lib`: shared infrastructure such as Supabase clients, unit conversion, and metrics.
 - `docs`: public architecture notes and progression rules.
 
@@ -75,14 +76,17 @@ This layer should not contain progression rules, unit conversion formulas, perso
 
 `src/features` owns product behavior grouped by domain.
 
-Expected modules:
+Current modules:
 
 - `src/features/exercises`: exercise library behavior.
 - `src/features/templates`: workout template behavior.
 - `src/features/workouts`: active workout and workout history behavior.
 - `src/features/progression`: recommendation engine and related types.
 - `src/features/records`: personal-record detection.
-- `src/features/analytics`: progress summaries and chart-ready data.
+
+Progress summaries and chart-ready analytics can become a separate feature
+module when the product needs them. They should not be introduced merely as a
+generic abstraction over workout history.
 
 Feature modules may contain components, hooks, validation schemas, mappers, and domain functions for that feature. The goal is to keep workout logic near workout code and progression logic near progression code instead of spreading it across generic folders.
 
@@ -113,6 +117,13 @@ This layer should answer:
 
 Data access should map database rows into application/domain shapes where needed. UI components should not manually assemble complex Supabase queries.
 
+The current application uses thin route files and Server Actions as entry
+points. Feature services coordinate product operations, query modules own
+Supabase calls, and mappers translate database rows into application types.
+Starting a workout is the notable transactional operation: the
+`start_workout_from_template` PostgreSQL function creates the session and its
+session-exercise rows atomically.
+
 ### Database and Auth
 
 Supabase owns authentication, PostgreSQL persistence, and Row Level Security.
@@ -130,13 +141,16 @@ The database stores facts:
 
 The database should not be the place where progression decisions are hidden. Recommendation rules should remain in tested TypeScript code, with enough input context stored so results can be reviewed later.
 
-The planned Phase 3 table model, relationships, enum values, RLS shape, and domain mapping are documented in [schema.md](./schema.md).
+The implemented table model, relationships, enum values, RLS shape, and domain
+mapping are documented in [schema.md](./schema.md).
 
 ### Local Client State
 
-Local browser state holds the set values currently being edited. A set becomes
-durable when the user logs it, and the active workout is reconstructed from
-Supabase after a refresh.
+Local browser state holds set values currently being edited and mirrors saved
+sets for immediate UI updates. A set becomes durable when the user logs it.
+The active session, session-exercise configuration, and logged sets live in
+Supabase, so the active workout is reconstructed from the database after a
+refresh or return visit.
 
 Persisting unfinished input drafts or queueing mutations while offline is
 deferred until the core logging flow has been tested in real gym sessions.
@@ -151,17 +165,61 @@ Tests should match the architecture:
 
 The progression engine should have the densest test coverage because it is the core differentiator.
 
-## Data Flow
+## Current Routes
 
-The intended workout flow is:
+- `/login`: authentication.
+- `/exercises`: searchable exercise library, custom-exercise management, and
+  assignment of active exercises to active templates.
+- `/templates`: template overview, previews, lifecycle controls, and workout
+  start controls.
+- `/templates/[templateId]/edit`: focused template builder.
+- `/workouts/[sessionId]`: active workout logging or a read-only completed or
+  cancelled session.
+- `/workouts`: paginated recent workout history.
+- `/workouts/templates`: history grouped by template.
+- `/workouts/templates/[templateId]`: paginated workout performances for one
+  template.
+- `/workouts/exercises`: history grouped by exercise.
+- `/workouts/exercises/[exerciseId]`: paginated performances for one exercise.
 
-1. A route in `src/app` renders the active workout screen.
-2. Workout feature code loads the template, current session, and previous exercise history.
-3. The user logs sets through mobile-first UI components.
-4. Workout data access code saves set data to Supabase and keeps active workout state recoverable locally.
-5. The progression feature receives the current sets and relevant recent history.
-6. The progression engine returns a recommendation.
-7. The app displays the explanation and persists the recommendation with enough input context to audit it later.
+## Active Workout Data Flow
+
+The implemented workout flow is:
+
+1. A user starts an active template from `/templates`.
+2. The `start_workout_from_template` database function validates ownership,
+   optionally cancels the user's existing active session, creates a
+   `workout_sessions` row, and snapshots the ordered template exercise
+   configuration into `workout_session_exercises`.
+3. `/workouts/[sessionId]` loads the persisted session exercises, logged sets,
+   and latest completed working-set performance for each exercise.
+4. Each log or update action persists one `workout_sets` row. Deleting a set
+   removes that row. Draft field values remain local until the user logs them.
+5. Finishing changes the session to `completed` and makes it read-only.
+   Abandoning changes it to `cancelled`; already logged sets remain available
+   in history.
+6. History services expose recent sessions plus template-grouped and
+   exercise-grouped views without putting query assembly in route components.
+
+## Recommendation Data Flow
+
+The planned recommendation lifecycle builds on the persisted workout flow:
+
+1. Feature mappers assemble a progression input from the session-exercise
+   snapshot, current working sets, and relevant recent sessions.
+2. The pure double-progression engine returns an action, machine-readable
+   reason, recommended normalized weight, and human-readable explanation.
+3. Application code attaches ownership and source identity, including the
+   `workout_session_exercise_id`, then persists the result with the engine
+   version and input audit snapshot.
+4. The UI displays both the recommendation and its explanation so the decision
+   remains inspectable.
+
+The rules and test expectations are documented in
+[progression-engine.md](./progression-engine.md). Recommendation rules and
+application orchestration must remain outside route files and database
+procedures. PostgreSQL stores the decision and audit context but does not hide
+the rule that produced it.
 
 ## Data Ownership
 
