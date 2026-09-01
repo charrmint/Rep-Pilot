@@ -134,9 +134,12 @@ The planned Phase 3 table model, relationships, enum values, RLS shape, and doma
 
 ### Local Client State
 
-Local browser state should be used for short-lived workout resilience, not as the source of truth for completed history.
+Local browser state holds the set values currently being edited. A set becomes
+durable when the user logs it, and the active workout is reconstructed from
+Supabase after a refresh.
 
-The first version should use local storage or a similarly simple mechanism to protect an active workout from refreshes and poor gym Wi-Fi. Completed workouts should be saved to Supabase.
+Persisting unfinished input drafts or queueing mutations while offline is
+deferred until the core logging flow has been tested in real gym sessions.
 
 ### Tests
 
