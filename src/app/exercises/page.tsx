@@ -3,10 +3,11 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
 import { listExerciseLibrary } from "@/features/exercises/exercise-service";
+import { listWorkoutTemplateLibrary } from "@/features/templates/template-service";
 
 import { AppTopBar } from "../_shared/app-top-bar";
 import { CreateExerciseForm } from "./create-exercise-form";
-import { ExerciseList } from "./exercise-list";
+import { ExerciseLibrary } from "./exercise-library";
 
 export default async function ExercisesPage() {
   await connection();
@@ -17,8 +18,10 @@ export default async function ExercisesPage() {
     redirect("/login");
   }
 
-  const { activeExercises, archivedCustomExercises } =
-    await listExerciseLibrary();
+  const [exerciseLibrary, { activeTemplates }] = await Promise.all([
+    listExerciseLibrary(),
+    listWorkoutTemplateLibrary(user.id),
+  ]);
 
   return (
     <main className="min-h-screen bg-gray-50 px-5 py-8">
@@ -42,18 +45,9 @@ export default async function ExercisesPage() {
 
         <CreateExerciseForm />
 
-        <ExerciseList
-          title="Active library"
-          description="These exercises are available when building workout templates."
-          emptyMessage="No active exercises found."
-          exercises={activeExercises}
-        />
-
-        <ExerciseList
-          title="Archived custom exercises"
-          description="Archived exercises stay out of new templates but can be restored."
-          emptyMessage="No archived custom exercises."
-          exercises={archivedCustomExercises}
+        <ExerciseLibrary
+          library={exerciseLibrary}
+          activeTemplates={activeTemplates}
         />
       </section>
     </main>

@@ -8,6 +8,10 @@ import {
   createCustomExercise,
   setCustomExerciseArchiveStatus,
 } from "@/features/exercises/exercise-service";
+import {
+  DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG,
+} from "@/features/templates/template-defaults";
+import { addWorkoutTemplateExercise } from "@/features/templates/template-service";
 
 import type { FormActionState } from "../_shared/form-action-state";
 import { readStringFormValue } from "../_shared/form-values";
@@ -59,6 +63,38 @@ export async function setCustomExerciseArchiveStatusAction(
     return {
       status: "success",
       message: "Exercise updated.",
+    };
+  } catch (error) {
+    return _toFormActionError(error);
+  }
+}
+
+export async function addExerciseToWorkoutTemplateAction(
+  _previousState: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  const user = await getCurrentUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const templateId = readStringFormValue(formData, "templateId");
+
+  try {
+    await addWorkoutTemplateExercise({
+      userId: user.id,
+      templateId,
+      exerciseId: readStringFormValue(formData, "exerciseId"),
+      config: DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG,
+    });
+    revalidatePath("/exercises");
+    revalidatePath("/templates");
+    revalidatePath(`/templates/${templateId}/edit`);
+
+    return {
+      status: "success",
+      message: "Exercise added to template.",
     };
   } catch (error) {
     return _toFormActionError(error);

@@ -4,6 +4,8 @@ import { useActionState } from "react";
 
 import { INITIAL_FORM_ACTION_STATE } from "@/app/_shared/form-action-state";
 import type { Exercise } from "@/features/exercises/types";
+import { ExercisePicker } from "@/features/templates/components/exercise-picker";
+import { DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG } from "@/features/templates/template-defaults";
 
 import { addWorkoutTemplateExerciseAction } from "./actions";
 
@@ -37,51 +39,36 @@ export function AddTemplateExerciseForm({
       </div>
 
       <div className="mt-4 grid gap-4">
-        <label className="flex flex-col gap-2 text-sm font-medium text-gray-800">
-          Exercise
-          <select
-            name="exerciseId"
-            required
-            disabled={!hasExercises}
-            className="min-h-12 rounded-md border border-gray-300 bg-white px-3 text-base text-gray-950 outline-none transition focus:border-gray-950 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
-          >
-            {hasExercises ? null : (
-              <option value="">No active exercises available</option>
-            )}
-            {exercises.map((exercise) => (
-              <option key={exercise.id} value={exercise.id}>
-                {exercise.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <ExercisePicker exercises={exercises} />
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <NumberField
             label="Sets"
             name="targetSets"
-            defaultValue={3}
+            defaultValue={DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.targetSets}
             min={1}
             step={1}
           />
           <NumberField
             label="Min reps"
             name="minReps"
-            defaultValue={8}
+            defaultValue={DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.minReps}
             min={1}
             step={1}
           />
           <NumberField
             label="Max reps"
             name="maxReps"
-            defaultValue={12}
+            defaultValue={DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.maxReps}
             min={1}
             step={1}
           />
           <NumberField
             label="Increment lb"
             name="weightIncrementLbs"
-            defaultValue={5}
+            defaultValue={
+              DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.weightIncrementLbs
+            }
             min={0.01}
             step={0.01}
           />
@@ -91,7 +78,9 @@ export function AddTemplateExerciseForm({
           <NumberField
             label="Default weight"
             name="defaultWeightValue"
-            defaultValue={0}
+            defaultValue={
+              DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.defaultWeightValue
+            }
             min={0}
             step={0.01}
           />
@@ -99,7 +88,9 @@ export function AddTemplateExerciseForm({
             Unit
             <select
               name="defaultWeightUnit"
-              defaultValue="lb"
+              defaultValue={
+                DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG.defaultWeightUnit
+              }
               className="min-h-12 rounded-md border border-gray-300 bg-white px-3 text-base text-gray-950 outline-none transition focus:border-gray-950"
             >
               <option value="lb">lb</option>
