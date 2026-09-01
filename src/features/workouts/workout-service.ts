@@ -9,6 +9,7 @@ import {
   getActiveWorkoutSessionRow,
   getWorkoutSessionExerciseRow,
   getWorkoutSessionRow,
+  listPreviousWorkoutSessionExerciseRows,
   listWorkoutSessionExerciseRows,
   listWorkoutSetRows,
   startWorkoutSession,
@@ -51,15 +52,25 @@ export async function getWorkoutSession({
     userId,
     sessionId,
   });
-  const setRows = await listWorkoutSetRows({
-    userId,
-    sessionExerciseIds: exerciseRows.map((row) => row.id),
-  });
+  const [setRows, previousExerciseRows] = await Promise.all([
+    listWorkoutSetRows({
+      userId,
+      sessionExerciseIds: exerciseRows.map((row) => row.id),
+    }),
+    sessionRow.status === "in_progress"
+      ? listPreviousWorkoutSessionExerciseRows({
+          userId,
+          currentSessionId: sessionId,
+          exerciseIds: exerciseRows.map((row) => row.exercise_id),
+        })
+      : Promise.resolve([]),
+  ]);
 
   return mapWorkoutSessionRowsToWorkoutSession(
     sessionRow,
     exerciseRows,
     setRows,
+    previousExerciseRows,
   );
 }
 
