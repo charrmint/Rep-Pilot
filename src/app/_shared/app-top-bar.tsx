@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { LogoutButton } from "@/features/auth/logout-button";
 
-export type AppSection = "templates" | "exercises";
+export type AppSection = "templates" | "exercises" | "workout";
 
 interface AppTopBarProps {
   activeSection: AppSection;
