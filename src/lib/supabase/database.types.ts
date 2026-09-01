@@ -468,7 +468,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      start_workout_from_template: {
+        Args: {
+          p_active_session_id_to_cancel?: string | null
+          p_template_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       progression_action: "increase" | "maintain" | "reduce" | "review"

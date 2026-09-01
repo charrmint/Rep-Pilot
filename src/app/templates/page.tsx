@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
 import { listWorkoutTemplateLibrary } from "@/features/templates/template-service";
+import { ActiveWorkoutBanner } from "@/features/workouts/components/active-workout-banner";
+import { getActiveWorkout } from "@/features/workouts/workout-service";
 
 import { AppTopBar } from "../_shared/app-top-bar";
 import { CreateTemplateForm } from "./create-template-form";
@@ -17,8 +19,11 @@ export default async function TemplatesPage() {
     redirect("/login");
   }
 
-  const { activeTemplates, archivedTemplates } =
-    await listWorkoutTemplateLibrary(user.id);
+  const [{ activeTemplates, archivedTemplates }, activeWorkout] =
+    await Promise.all([
+      listWorkoutTemplateLibrary(user.id),
+      getActiveWorkout(user.id),
+    ]);
 
   return (
     <main className="min-h-screen bg-gray-50 px-5 py-8">
@@ -37,6 +42,10 @@ export default async function TemplatesPage() {
           </p>
         </header>
 
+        {activeWorkout ? (
+          <ActiveWorkoutBanner workout={activeWorkout} />
+        ) : null}
+
         <CreateTemplateForm />
 
         <TemplateList
@@ -44,6 +53,7 @@ export default async function TemplatesPage() {
           description="These templates are available when starting a workout."
           emptyMessage="No active templates yet."
           templates={activeTemplates}
+          activeWorkout={activeWorkout}
         />
 
         <TemplateList
@@ -51,6 +61,7 @@ export default async function TemplatesPage() {
           description="Archived templates stay out of new workout starts but can be restored."
           emptyMessage="No archived templates."
           templates={archivedTemplates}
+          activeWorkout={null}
         />
       </section>
     </main>
