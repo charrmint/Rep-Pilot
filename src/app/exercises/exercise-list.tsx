@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { Exercise } from "@/features/exercises/types";
 
 import { ExerciseArchiveControl } from "./exercise-archive-control";
@@ -55,12 +57,20 @@ export function ExerciseList({
                 </div>
               </div>
 
-              {exercise.isSystemExercise ? null : (
-                <ExerciseArchiveControl
-                  exerciseId={exercise.id}
-                  isArchived={exercise.isArchived}
-                />
-              )}
+              <div className="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                <Link
+                  href={`/workouts/exercises/${exercise.id}`}
+                  className="min-h-10 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-500 hover:text-gray-950"
+                >
+                  History
+                </Link>
+                {exercise.isSystemExercise ? null : (
+                  <ExerciseArchiveControl
+                    exerciseId={exercise.id}
+                    isArchived={exercise.isArchived}
+                  />
+                )}
+              </div>
             </li>
           ))}
         </ul>

@@ -1,5 +1,6 @@
 import type { PreviousExercisePerformance as PreviousExercisePerformanceData } from "../types";
 import { LocalDateTime } from "./local-date-time";
+import { WorkoutSetSummary } from "./workout-set-summary";
 
 interface PreviousExercisePerformanceProps {
   exerciseName: string;
@@ -27,21 +28,9 @@ export function PreviousExercisePerformance({
       </div>
 
       {performance ? (
-        <ol className="mt-2 flex flex-wrap gap-2">
-          {performance.sets.map((set) => (
-            <li
-              key={set.id}
-              className="rounded bg-white px-2.5 py-1.5 text-sm text-gray-800 shadow-xs"
-            >
-              <span className="mr-1 text-xs font-medium text-gray-500">
-                {set.position}.
-              </span>
-              <span className="font-semibold">
-                {set.weightValue} {set.weightUnit} × {set.reps}
-              </span>
-            </li>
-          ))}
-        </ol>
+        <div className="mt-2">
+          <WorkoutSetSummary sets={performance.sets} />
+        </div>
       ) : (
         <p className="mt-1 text-sm text-blue-800">
           No previous completed sets.

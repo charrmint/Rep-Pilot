@@ -6,6 +6,7 @@ import type {
 } from "@/lib/supabase/database.types";
 import type { WeightUnit } from "@/lib/units/types";
 
+import type { ExerciseRow } from "../exercises/types";
 import type { WorkoutTemplateRow } from "../templates/types";
 
 export type WorkoutSessionRow = Tables<"workout_sessions">;
@@ -28,6 +29,47 @@ export type PreviousWorkoutSessionExerciseRow = Pick<
   sets: WorkoutSetRow[];
 };
 
+export type WorkoutHistorySessionExerciseRow = Pick<
+  WorkoutSessionExerciseRow,
+  "exercise_id" | "exercise_name_snapshot" | "id" | "position"
+> & {
+  sets: WorkoutSetRow[];
+};
+
+export type WorkoutHistorySessionRow = WorkoutSessionRowWithTemplate & {
+  exercises: WorkoutHistorySessionExerciseRow[];
+};
+
+export type TemplateHistorySummaryRow = Pick<
+  WorkoutSessionRow,
+  "started_at" | "template_id"
+> & {
+  template: Pick<WorkoutTemplateRow, "id" | "is_archived" | "name"> | null;
+};
+
+export type ExerciseHistorySummaryRow = Pick<
+  WorkoutSessionExerciseRow,
+  "exercise_id" | "exercise_name_snapshot"
+> & {
+  workoutSession: Pick<WorkoutSessionRow, "started_at">;
+  sets: Array<Pick<WorkoutSetRow, "id">>;
+};
+
+export type ExerciseHistoryPerformanceRow = Pick<
+  WorkoutSessionExerciseRow,
+  "id" | "exercise_id" | "exercise_name_snapshot"
+> & {
+  workoutSession: Pick<
+    WorkoutSessionRow,
+    "completed_at" | "id" | "started_at" | "status" | "template_id"
+  > & {
+    template: Pick<WorkoutTemplateRow, "name"> | null;
+  };
+  sets: WorkoutSetRow[];
+};
+
+export type ExerciseHistorySubjectRow = Pick<ExerciseRow, "id" | "name">;
+
 export interface ActiveWorkoutSummary {
   id: string;
   templateName: string;
@@ -49,6 +91,74 @@ export interface PreviousExercisePerformance {
   workoutSessionExerciseId: string;
   startedAt: string;
   sets: WorkoutSet[];
+}
+
+export interface PaginatedHistory<T> {
+  items: T[];
+  page: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
+export interface WorkoutHistoryExercise {
+  sessionExerciseId: string;
+  exerciseId: string;
+  exerciseName: string;
+  position: number;
+  sets: WorkoutSet[];
+}
+
+export interface WorkoutHistorySession {
+  id: string;
+  templateId: string | null;
+  templateName: string;
+  status: Exclude<WorkoutSessionStatus, "in_progress">;
+  startedAt: string;
+  completedAt: string | null;
+  exercises: WorkoutHistoryExercise[];
+}
+
+export interface TemplateHistorySummary {
+  templateId: string;
+  templateName: string;
+  isArchived: boolean;
+  lastPerformedAt: string;
+  workoutCount: number;
+}
+
+export interface WorkoutHistoryTemplate {
+  id: string;
+  name: string;
+  isArchived: boolean;
+}
+
+export interface TemplateHistory {
+  template: WorkoutHistoryTemplate;
+  workouts: PaginatedHistory<WorkoutHistorySession>;
+}
+
+export interface ExerciseHistorySummary {
+  exerciseId: string;
+  exerciseName: string;
+  lastPerformedAt: string;
+  performanceCount: number;
+}
+
+export interface ExerciseHistoryPerformance {
+  sessionExerciseId: string;
+  workoutSessionId: string;
+  templateId: string | null;
+  templateName: string;
+  sessionStatus: Exclude<WorkoutSessionStatus, "in_progress">;
+  startedAt: string;
+  completedAt: string | null;
+  sets: WorkoutSet[];
+}
+
+export interface ExerciseHistory {
+  exerciseId: string;
+  exerciseName: string;
+  performances: PaginatedHistory<ExerciseHistoryPerformance>;
 }
 
 export interface WorkoutSessionExercise {
