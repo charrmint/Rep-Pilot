@@ -12,9 +12,9 @@ describe("Home", () => {
     expect(
       screen.getByText("Log the workout. Know what to do next."),
     ).toBeInTheDocument();
-    expect(screen.getAllByRole("link")).toHaveLength(1);
+    expect(screen.getByRole("button", { name: "Start demo" })).toBeEnabled();
     expect(
-      screen.getByRole("link", { name: "Get started" }),
+      screen.getByRole("link", { name: "Sign in" }),
     ).toHaveAttribute("href", "/login");
   });
 });
