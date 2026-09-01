@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { WorkoutSession, WorkoutSet } from "../types";
@@ -32,6 +38,7 @@ const ACTIVE_WORKOUT: WorkoutSession = {
       plannedWeightUnit: "lb",
       plannedNormalizedWeightLbs: 135,
       weightIncrementLbs: 5,
+      previousPerformance: null,
       sets: [],
     },
   ],
@@ -81,6 +88,53 @@ describe("ActiveWorkoutScreen", () => {
       weightValue: 135,
       weightUnit: "lb",
     });
+  });
+
+  it("shows the most recent completed sets for an exercise", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              previousPerformance: {
+                workoutSessionId: "previous-session-id",
+                workoutSessionExerciseId: "previous-session-exercise-id",
+                startedAt: "2026-08-28T16:00:00.000Z",
+                sets: [
+                  {
+                    id: "previous-set-1",
+                    position: 1,
+                    reps: 10,
+                    weightValue: 130,
+                    weightUnit: "lb",
+                    normalizedWeightLbs: 130,
+                    performedAt: "2026-08-28T16:05:00.000Z",
+                  },
+                  {
+                    id: "previous-set-2",
+                    position: 2,
+                    reps: 9,
+                    weightValue: 130,
+                    weightUnit: "lb",
+                    normalizedWeightLbs: 130,
+                    performedAt: "2026-08-28T16:08:00.000Z",
+                  },
+                ],
+              },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const previousPerformance = screen.getByRole("region", {
+      name: "Previous performance for Bench Press",
+    });
+
+    expect(within(previousPerformance).getByText("130 lb × 10")).toBeInTheDocument();
+    expect(within(previousPerformance).getByText("130 lb × 9")).toBeInTheDocument();
   });
 
   it("renders completed workouts as read-only", () => {

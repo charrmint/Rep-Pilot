@@ -1,5 +1,7 @@
 import type {
   ActiveWorkoutSummary,
+  PreviousExercisePerformance,
+  PreviousWorkoutSessionExerciseRow,
   WorkoutSession,
   WorkoutSessionExercise,
   WorkoutSessionExerciseRow,
@@ -22,8 +24,15 @@ export function mapWorkoutSessionRowsToWorkoutSession(
   sessionRow: WorkoutSessionRowWithTemplate,
   exerciseRows: WorkoutSessionExerciseRow[],
   setRows: WorkoutSetRow[],
+  previousExerciseRows: PreviousWorkoutSessionExerciseRow[] = [],
 ): WorkoutSession {
   const setsBySessionExerciseId = _groupSetsBySessionExerciseId(setRows);
+  const previousPerformanceByExerciseId = new Map(
+    previousExerciseRows.map((row) => [
+      row.exercise_id,
+      _mapPreviousExercisePerformance(row),
+    ]),
+  );
 
   return {
     id: sessionRow.id,
@@ -35,6 +44,7 @@ export function mapWorkoutSessionRowsToWorkoutSession(
       _mapWorkoutSessionExerciseRow(
         row,
         setsBySessionExerciseId.get(row.id) ?? [],
+        previousPerformanceByExerciseId.get(row.exercise_id) ?? null,
       ),
     ),
   };
@@ -55,6 +65,7 @@ export function mapWorkoutSetRowToWorkoutSet(row: WorkoutSetRow): WorkoutSet {
 function _mapWorkoutSessionExerciseRow(
   row: WorkoutSessionExerciseRow,
   sets: WorkoutSet[],
+  previousPerformance: PreviousExercisePerformance | null,
 ): WorkoutSessionExercise {
   return {
     id: row.id,
@@ -68,7 +79,19 @@ function _mapWorkoutSessionExerciseRow(
     plannedWeightUnit: row.planned_weight_unit,
     plannedNormalizedWeightLbs: row.planned_normalized_weight_lbs,
     weightIncrementLbs: row.weight_increment_lbs,
+    previousPerformance,
     sets,
+  };
+}
+
+function _mapPreviousExercisePerformance(
+  row: PreviousWorkoutSessionExerciseRow,
+): PreviousExercisePerformance {
+  return {
+    workoutSessionId: row.workout_session_id,
+    workoutSessionExerciseId: row.id,
+    startedAt: row.workoutSession.started_at,
+    sets: row.sets.map(mapWorkoutSetRowToWorkoutSet),
   };
 }
 

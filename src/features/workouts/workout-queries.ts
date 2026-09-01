@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
+  PreviousWorkoutSessionExerciseRow,
   WorkoutSessionExerciseRow,
   WorkoutSessionRow,
   WorkoutSessionRowWithTemplate,
@@ -14,6 +15,18 @@ const WORKOUT_SESSION_WITH_TEMPLATE_SELECT = `
   *,
   template:workout_templates (
     name
+  )
+`;
+
+const PREVIOUS_EXERCISE_PERFORMANCE_SELECT = `
+  id,
+  exercise_id,
+  workout_session_id,
+  workoutSession:workout_sessions!workout_session_exercises_workout_session_id_fkey!inner (
+    started_at
+  ),
+  sets:workout_sets!workout_sets_workout_session_exercise_id_fkey!inner (
+    *
   )
 `;
 
@@ -125,6 +138,52 @@ export async function listWorkoutSetRows({
   }
 
   return data ?? [];
+}
+
+export async function listPreviousWorkoutSessionExerciseRows({
+  userId,
+  currentSessionId,
+  exerciseIds,
+}: {
+  userId: string;
+  currentSessionId: string;
+  exerciseIds: string[];
+}): Promise<PreviousWorkoutSessionExerciseRow[]> {
+  const uniqueExerciseIds = [...new Set(exerciseIds)];
+
+  if (uniqueExerciseIds.length === 0) {
+    return [];
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const rows = await Promise.all(
+    uniqueExerciseIds.map(async (exerciseId) => {
+      const { data, error } = await supabase
+        .from("workout_session_exercises")
+        .select(PREVIOUS_EXERCISE_PERFORMANCE_SELECT)
+        .eq("user_id", userId)
+        .eq("exercise_id", exerciseId)
+        .neq("workout_session_id", currentSessionId)
+        .eq("workoutSession.status", "completed")
+        .eq("sets.kind", "working")
+        .order("created_at", { ascending: false })
+        .order("position", { ascending: true, referencedTable: "sets" })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        throw new Error(
+          `Failed to get previous exercise performance: ${error.message}`,
+        );
+      }
+
+      return data as PreviousWorkoutSessionExerciseRow | null;
+    }),
+  );
+
+  return rows.filter(
+    (row): row is PreviousWorkoutSessionExerciseRow => row !== null,
+  );
 }
 
 export async function startWorkoutSession({
