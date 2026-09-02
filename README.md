@@ -1,5 +1,7 @@
 # RepPilot
 
+Live app deployment at: https://rep-pilot.vercel.app/
+
 RepPilot is a mobile-first adaptive workout tracker.
 
 The MVP focuses on fast workout logging, previous-session context, and deterministic progression recommendations.
