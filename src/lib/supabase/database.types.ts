@@ -71,7 +71,10 @@ export type Database = {
           id: string
           input_snapshot: Json
           reason: Database["public"]["Enums"]["progression_reason"]
-          recommended_weight_lbs: number
+          recommended_max_reps: number | null
+          recommended_min_reps: number | null
+          recommended_rir: number | null
+          recommended_weight_lbs: number | null
           user_id: string
           workout_session_exercise_id: string
         }
@@ -83,7 +86,10 @@ export type Database = {
           id?: string
           input_snapshot?: Json
           reason: Database["public"]["Enums"]["progression_reason"]
-          recommended_weight_lbs: number
+          recommended_max_reps?: number | null
+          recommended_min_reps?: number | null
+          recommended_rir?: number | null
+          recommended_weight_lbs?: number | null
           user_id: string
           workout_session_exercise_id: string
         }
@@ -95,7 +101,10 @@ export type Database = {
           id?: string
           input_snapshot?: Json
           reason?: Database["public"]["Enums"]["progression_reason"]
-          recommended_weight_lbs?: number
+          recommended_max_reps?: number | null
+          recommended_min_reps?: number | null
+          recommended_rir?: number | null
+          recommended_weight_lbs?: number | null
           user_id?: string
           workout_session_exercise_id?: string
         }
@@ -468,6 +477,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_workout_with_recommendations: {
+        Args: {
+          p_completed_at: string
+          p_recommendations?: Json
+          p_session_id: string
+        }
+        Returns: undefined
+      }
       provision_demo_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -486,6 +503,8 @@ export type Database = {
         | "pain_recorded"
         | "incomplete_target_sets"
         | "top_of_rep_range"
+        | "capacity_supports_increase"
+        | "increment_exceeds_capacity"
         | "high_effort"
         | "within_rep_range"
         | "single_set_below_range"
@@ -631,6 +650,8 @@ export const Constants = {
         "pain_recorded",
         "incomplete_target_sets",
         "top_of_rep_range",
+        "capacity_supports_increase",
+        "increment_exceeds_capacity",
         "high_effort",
         "within_rep_range",
         "single_set_below_range",
