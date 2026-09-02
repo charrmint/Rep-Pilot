@@ -26,6 +26,11 @@ export function WorkoutSetSummary({
           <span className="font-semibold">
             {set.weightValue} {set.weightUnit} × {set.reps}
           </span>
+          {set.rir === null ? null : (
+            <span className="ml-1 text-xs text-gray-500">
+              · {set.rir} RIR
+            </span>
+          )}
         </li>
       ))}
     </ol>

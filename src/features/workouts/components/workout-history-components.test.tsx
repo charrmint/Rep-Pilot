@@ -17,6 +17,7 @@ const SETS: WorkoutSet[] = [
     weightValue: 135,
     weightUnit: "lb",
     normalizedWeightLbs: 135,
+    rir: null,
     performedAt: "2026-09-01T16:05:00.000Z",
   },
   {
@@ -26,6 +27,7 @@ const SETS: WorkoutSet[] = [
     weightValue: 135,
     weightUnit: "lb",
     normalizedWeightLbs: 135,
+    rir: null,
     performedAt: "2026-09-01T16:08:00.000Z",
   },
 ];

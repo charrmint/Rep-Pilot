@@ -6,6 +6,7 @@ import type {
   WorkoutSessionRowWithTemplate,
   WorkoutSetRow,
 } from "./types";
+import type { ProgressionRecommendationRow } from "../progression/types";
 import { mapWorkoutSessionRowsToWorkoutSession } from "./workout-mappers";
 
 const SESSION_ROW: WorkoutSessionRowWithTemplate = {
@@ -74,6 +75,7 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
           weightValue: 130,
           weightUnit: "lb",
           normalizedWeightLbs: 130,
+          rir: null,
           performedAt: "2026-08-28T16:05:00.000Z",
         },
       ],
@@ -88,6 +90,47 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
     );
 
     expect(workout.exercises[0].previousPerformance).toBeNull();
+    expect(workout.exercises[0].recommendation).toBeNull();
+  });
+
+  it("attaches a persisted recommendation to its source exercise", () => {
+    const recommendation: ProgressionRecommendationRow = {
+      id: "recommendation-id",
+      user_id: "user-id",
+      workout_session_exercise_id: "current-session-exercise-id",
+      action: "increase",
+      reason: "top_of_rep_range",
+      recommended_weight_lbs: 140,
+      recommended_min_reps: 8,
+      recommended_max_reps: 10,
+      recommended_rir: 2,
+      explanation: "All target sets reached the top of the rep range.",
+      engine_version: "double_progression_v1",
+      input_snapshot: { schema_version: "progression_input_v1" },
+      created_at: "2026-09-01T17:00:00.000Z",
+    };
+
+    const workout = mapWorkoutSessionRowsToWorkoutSession(
+      { ...SESSION_ROW, status: "completed" },
+      [SESSION_EXERCISE_ROW],
+      [],
+      [],
+      [recommendation],
+    );
+
+    expect(workout.exercises[0].recommendation).toEqual({
+      id: "recommendation-id",
+      action: "increase",
+      reason: "top_of_rep_range",
+      recommendedWeightLbs: 140,
+      recommendedMinReps: 8,
+      recommendedMaxReps: 10,
+      recommendedRir: 2,
+      explanation: "All target sets reached the top of the rep range.",
+      engineVersion: "double_progression_v1",
+      inputSnapshot: { schema_version: "progression_input_v1" },
+      createdAt: "2026-09-01T17:00:00.000Z",
+    });
   });
 });
 
