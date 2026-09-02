@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { WorkoutSession, WorkoutSet } from "../types";
+import { RecommendationSummary } from "../../progression/components/recommendation-summary";
 import { LocalDateTime } from "./local-date-time";
 import { WorkoutExerciseCard } from "./workout-exercise-card";
 import { WorkoutLifecycleControls } from "./workout-lifecycle-controls";
@@ -163,11 +164,19 @@ function ReadOnlyWorkout({ workout }: { workout: WorkoutSession }) {
                     </span>
                     <span className="font-semibold text-gray-950">
                       {set.weightValue} {set.weightUnit} × {set.reps}
+                      {set.rir === null ? "" : ` · ${set.rir} RIR`}
                     </span>
                   </li>
                 ))}
               </ol>
             )}
+            {isCompleted && exercise.recommendation ? (
+              <RecommendationSummary
+                recommendation={exercise.recommendation}
+                displayUnit={exercise.plannedWeightUnit}
+                targetSets={exercise.targetSets}
+              />
+            ) : null}
           </li>
         ))}
       </ol>

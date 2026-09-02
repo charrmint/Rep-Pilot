@@ -7,6 +7,12 @@ import {
   mapWorkoutSessionRowToActiveWorkoutSummary,
   mapWorkoutSetRowToWorkoutSet,
 } from "./workout-mappers";
+import { prepareProgressionRecommendation } from "../progression/progression-mappers";
+import {
+  listProgressionRecommendationRows,
+  listRecentProgressionExerciseRows,
+} from "../progression/progression-queries";
+import { completeWorkoutWithRecommendationsRow } from "./workout-completion-queries";
 import {
   createWorkoutSetRow,
   deleteWorkoutSetRow,
@@ -76,16 +82,23 @@ export async function getWorkoutSession({
     userId,
     sessionId,
   });
-  const [setRows, previousExerciseRows] = await Promise.all([
+  const sessionExerciseIds = exerciseRows.map((row) => row.id);
+  const [setRows, previousExerciseRows, recommendationRows] = await Promise.all([
     listWorkoutSetRows({
       userId,
-      sessionExerciseIds: exerciseRows.map((row) => row.id),
+      sessionExerciseIds,
     }),
     sessionRow.status === "in_progress"
       ? listPreviousWorkoutSessionExerciseRows({
           userId,
           currentSessionId: sessionId,
           exerciseIds: exerciseRows.map((row) => row.exercise_id),
+        })
+      : Promise.resolve([]),
+    sessionRow.status === "completed"
+      ? listProgressionRecommendationRows({
+          userId,
+          sessionExerciseIds,
         })
       : Promise.resolve([]),
   ]);
@@ -95,6 +108,7 @@ export async function getWorkoutSession({
     exerciseRows,
     setRows,
     previousExerciseRows,
+    recommendationRows,
   );
 }
 
@@ -228,6 +242,7 @@ export async function saveWorkoutSet({
         weight_value: validatedInput.weightValue,
         weight_unit: validatedInput.weightUnit,
         normalized_weight_lbs: validatedInput.normalizedWeightLbs,
+        rir: validatedInput.rir,
       },
     });
 
@@ -243,6 +258,7 @@ export async function saveWorkoutSet({
     weight_value: validatedInput.weightValue,
     weight_unit: validatedInput.weightUnit,
     normalized_weight_lbs: validatedInput.normalizedWeightLbs,
+    rir: validatedInput.rir,
   });
 
   return mapWorkoutSetRowToWorkoutSet(row);
@@ -266,25 +282,61 @@ export async function finishWorkout({
   userId: string;
   sessionId: string;
 }): Promise<void> {
-  const workout = await getWorkoutSession({ userId, sessionId });
+  const sessionRow = await getWorkoutSessionRow({ userId, sessionId });
 
-  if (!workout) {
+  if (!sessionRow) {
     throw new Error("Workout session not found.");
   }
 
-  _requireInProgressStatus(workout.status);
+  if (sessionRow.status === "completed") {
+    return;
+  }
 
-  if (workout.exercises.every((exercise) => exercise.sets.length === 0)) {
+  _requireInProgressStatus(sessionRow.status);
+
+  const exerciseRows = await listWorkoutSessionExerciseRows({
+    userId,
+    sessionId,
+  });
+  const setRows = await listWorkoutSetRows({
+    userId,
+    sessionExerciseIds: exerciseRows.map((row) => row.id),
+  });
+
+  if (setRows.length === 0) {
     throw new Error("Log at least one set before finishing the workout.");
   }
 
-  await updateWorkoutSessionRow({
+  const exercisesWithWorkingSets = exerciseRows.filter((exerciseRow) =>
+    setRows.some(
+      (setRow) =>
+        setRow.workout_session_exercise_id === exerciseRow.id &&
+        setRow.kind === "working",
+    ),
+  );
+  const recentExerciseRows = await listRecentProgressionExerciseRows({
     userId,
+    currentSessionId: sessionId,
+    exerciseIds: exercisesWithWorkingSets.map((row) => row.exercise_id),
+  });
+  const recommendations = exercisesWithWorkingSets.map((exerciseRow) => {
+    const recommendation = prepareProgressionRecommendation({
+      exerciseRow,
+      setRows,
+      recentExerciseRows,
+    });
+
+    if (!recommendation) {
+      throw new Error("A logged working set must produce a recommendation.");
+    }
+
+    return recommendation;
+  });
+
+  await completeWorkoutWithRecommendationsRow({
     sessionId,
-    update: {
-      status: "completed",
-      completed_at: new Date().toISOString(),
-    },
+    completedAt: new Date().toISOString(),
+    recommendations,
   });
 }
 

@@ -7,6 +7,10 @@ import type {
 import type { WeightUnit } from "@/lib/units/types";
 
 import type { ExerciseRow } from "../exercises/types";
+import type {
+  PersistedProgressionRecommendation,
+  PreparedProgressionRecommendation,
+} from "../progression/types";
 import type { WorkoutTemplateRow } from "../templates/types";
 
 export type WorkoutSessionRow = Tables<"workout_sessions">;
@@ -83,6 +87,7 @@ export interface WorkoutSet {
   weightValue: number;
   weightUnit: WeightUnit;
   normalizedWeightLbs: number;
+  rir: number | null;
   performedAt: string;
 }
 
@@ -174,6 +179,7 @@ export interface WorkoutSessionExercise {
   plannedNormalizedWeightLbs: number;
   weightIncrementLbs: number;
   previousPerformance: PreviousExercisePerformance | null;
+  recommendation: PersistedProgressionRecommendation | null;
   sets: WorkoutSet[];
 }
 
@@ -198,6 +204,7 @@ export interface SaveWorkoutSetInput {
   reps: number;
   weightValue: number;
   weightUnit: WeightUnit;
+  rir?: number | null;
 }
 
 export interface DeleteWorkoutSetInput {
@@ -206,5 +213,12 @@ export interface DeleteWorkoutSetInput {
 }
 
 export interface ValidatedWorkoutSetInput extends SaveWorkoutSetInput {
+  rir: number | null;
   normalizedWeightLbs: number;
+}
+
+export interface CompleteWorkoutWithRecommendationsInput {
+  sessionId: string;
+  completedAt: string;
+  recommendations: PreparedProgressionRecommendation[];
 }

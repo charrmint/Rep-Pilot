@@ -18,6 +18,7 @@ describe("validateWorkoutSetInput", () => {
       reps: 8,
       weightValue: 100,
       weightUnit: "kg",
+      rir: null,
       normalizedWeightLbs: 220,
     });
   });
@@ -68,5 +69,31 @@ describe("validateWorkoutSetInput", () => {
         weightUnit: "lb",
       }),
     ).toThrow("Weight must be a non-negative number.");
+  });
+
+  it("accepts an optional valid RIR value", () => {
+    expect(
+      validateWorkoutSetInput({
+        sessionExerciseId: "session-exercise-id",
+        position: 1,
+        reps: 8,
+        weightValue: 135,
+        weightUnit: "lb",
+        rir: 2,
+      }),
+    ).toMatchObject({ rir: 2 });
+  });
+
+  it("rejects RIR outside the supported range", () => {
+    expect(() =>
+      validateWorkoutSetInput({
+        sessionExerciseId: "session-exercise-id",
+        position: 1,
+        reps: 8,
+        weightValue: 135,
+        weightUnit: "lb",
+        rir: 11,
+      }),
+    ).toThrow("RIR must be a whole number between 0 and 10.");
   });
 });

@@ -20,6 +20,8 @@ import type {
   WorkoutSet,
   WorkoutSetRow,
 } from "./types";
+import { mapProgressionRecommendationRow } from "../progression/progression-mappers";
+import type { ProgressionRecommendationRow } from "../progression/types";
 
 export function mapWorkoutHistorySessionRows(
   rows: WorkoutHistorySessionRow[],
@@ -110,8 +112,15 @@ export function mapWorkoutSessionRowsToWorkoutSession(
   exerciseRows: WorkoutSessionExerciseRow[],
   setRows: WorkoutSetRow[],
   previousExerciseRows: PreviousWorkoutSessionExerciseRow[] = [],
+  recommendationRows: ProgressionRecommendationRow[] = [],
 ): WorkoutSession {
   const setsBySessionExerciseId = _groupSetsBySessionExerciseId(setRows);
+  const recommendationBySessionExerciseId = new Map(
+    recommendationRows.map((row) => [
+      row.workout_session_exercise_id,
+      mapProgressionRecommendationRow(row),
+    ]),
+  );
   const previousPerformanceByExerciseId = new Map(
     previousExerciseRows.map((row) => [
       row.exercise_id,
@@ -130,6 +139,7 @@ export function mapWorkoutSessionRowsToWorkoutSession(
         row,
         setsBySessionExerciseId.get(row.id) ?? [],
         previousPerformanceByExerciseId.get(row.exercise_id) ?? null,
+        recommendationBySessionExerciseId.get(row.id) ?? null,
       ),
     ),
   };
@@ -143,6 +153,7 @@ export function mapWorkoutSetRowToWorkoutSet(row: WorkoutSetRow): WorkoutSet {
     weightValue: row.weight_value,
     weightUnit: row.weight_unit,
     normalizedWeightLbs: row.normalized_weight_lbs,
+    rir: row.rir,
     performedAt: row.performed_at,
   };
 }
@@ -179,6 +190,7 @@ function _mapWorkoutSessionExerciseRow(
   row: WorkoutSessionExerciseRow,
   sets: WorkoutSet[],
   previousPerformance: PreviousExercisePerformance | null,
+  recommendation: WorkoutSessionExercise["recommendation"],
 ): WorkoutSessionExercise {
   return {
     id: row.id,
@@ -193,6 +205,7 @@ function _mapWorkoutSessionExerciseRow(
     plannedNormalizedWeightLbs: row.planned_normalized_weight_lbs,
     weightIncrementLbs: row.weight_increment_lbs,
     previousPerformance,
+    recommendation,
     sets,
   };
 }

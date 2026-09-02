@@ -193,9 +193,14 @@ The implemented workout flow is:
    configuration into `workout_session_exercises`.
 3. `/workouts/[sessionId]` loads the persisted session exercises, logged sets,
    and latest completed working-set performance for each exercise.
-4. Each log or update action persists one `workout_sets` row. Deleting a set
-   removes that row. Draft field values remain local until the user logs them.
-5. Finishing changes the session to `completed` and makes it read-only.
+4. Each log or update action persists one `workout_sets` row, including an
+   optional per-set RIR value. Deleting a set removes that row. Draft field
+   values remain local until the user logs them.
+5. Finishing loads the two recent completed performances needed by the
+   progression engine, generates recommendations for exercises with working
+   sets, and sends the results to
+   `complete_workout_with_recommendations`. The database function persists the
+   recommendations and changes the session to `completed` atomically.
    Abandoning changes it to `cancelled`; already logged sets remain available
    in history.
 6. History services expose recent sessions plus template-grouped and
@@ -203,17 +208,27 @@ The implemented workout flow is:
 
 ## Recommendation Data Flow
 
-The planned recommendation lifecycle builds on the persisted workout flow:
+The implemented recommendation lifecycle builds on the persisted workout flow:
 
 1. Feature mappers assemble a progression input from the session-exercise
-   snapshot, current working sets, and relevant recent sessions.
-2. The pure double-progression engine returns an action, machine-readable
-   reason, recommended normalized weight, and human-readable explanation.
-3. Application code attaches ownership and source identity, including the
-   `workout_session_exercise_id`, then persists the result with the engine
-   version and input audit snapshot.
-4. The UI displays both the recommendation and its explanation so the decision
-   remains inspectable.
+   snapshot, current working sets, and up to two recent completed performances
+   for the same exercise.
+2. The pure double-progression engine normalizes every evaluated set into an
+   RIR-adjusted capacity estimate, evaluates the current and next configured
+   weight increment, and returns an action, machine-readable reason,
+   recommended normalized weight, target rep range, target RIR, and
+   human-readable explanation. The average projected capacity and the final
+   set's projection prevent one unusually strong set from forcing an increase.
+3. Application code attaches source identity, including the
+   `workout_session_exercise_id`, engine version, and a typed, versioned input
+   audit snapshot.
+4. The completion database function validates recommendation coverage and
+   persists the results in the same transaction that completes the workout.
+   Its unique source constraint and completed-session guard make retries safe.
+5. The completed workout UI displays a complete next-session prescription in
+   the snapshotted exercise unit—weight, retained working sets, rep range, and
+   target RIR—and includes the explanation so the decision remains
+   inspectable.
 
 The rules and test expectations are documented in
 [progression-engine.md](./progression-engine.md). Recommendation rules and

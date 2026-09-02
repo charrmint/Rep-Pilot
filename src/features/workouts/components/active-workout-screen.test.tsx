@@ -39,6 +39,7 @@ const ACTIVE_WORKOUT: WorkoutSession = {
       plannedNormalizedWeightLbs: 135,
       weightIncrementLbs: 5,
       previousPerformance: null,
+      recommendation: null,
       sets: [],
     },
   ],
@@ -66,6 +67,7 @@ describe("ActiveWorkoutScreen", () => {
       weightValue: 135,
       weightUnit: "lb",
       normalizedWeightLbs: 135,
+      rir: 2,
       performedAt: "2026-09-01T16:05:00.000Z",
     };
 
@@ -75,11 +77,21 @@ describe("ActiveWorkoutScreen", () => {
     fireEvent.change(screen.getAllByLabelText("Reps")[0], {
       target: { value: "10" },
     });
+    const rirPicker = screen.getByRole("listbox", { name: "RIR for set 1" });
+    Object.defineProperty(rirPicker, "scrollTop", {
+      configurable: true,
+      value: 64,
+    });
+    fireEvent.scroll(rirPicker);
     fireEvent.click(screen.getAllByRole("button", { name: "Log set" })[0]);
 
     await waitFor(() => {
       expect(screen.getByText("1 logged / 3 planned sets")).toBeInTheDocument();
     });
+    expect(within(rirPicker).getByRole("option", { name: "2" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     expect(saveWorkoutSetAction).toHaveBeenCalledWith({
       sessionExerciseId: "session-exercise-id",
       workoutSetId: undefined,
@@ -87,6 +99,7 @@ describe("ActiveWorkoutScreen", () => {
       reps: 10,
       weightValue: 135,
       weightUnit: "lb",
+      rir: 2,
     });
   });
 
@@ -110,6 +123,7 @@ describe("ActiveWorkoutScreen", () => {
                     weightValue: 130,
                     weightUnit: "lb",
                     normalizedWeightLbs: 130,
+                    rir: null,
                     performedAt: "2026-08-28T16:05:00.000Z",
                   },
                   {
@@ -119,6 +133,7 @@ describe("ActiveWorkoutScreen", () => {
                     weightValue: 130,
                     weightUnit: "lb",
                     normalizedWeightLbs: 130,
+                    rir: null,
                     performedAt: "2026-08-28T16:08:00.000Z",
                   },
                 ],
@@ -151,5 +166,88 @@ describe("ActiveWorkoutScreen", () => {
     expect(screen.getByText("Workout complete")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Log set" })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Back to templates" })).toBeInTheDocument();
+  });
+
+  it("shows the persisted progression recommendation on a completed exercise", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          status: "completed",
+          completedAt: "2026-09-01T17:00:00.000Z",
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              plannedWeightUnit: "kg",
+              recommendation: {
+                id: "recommendation-id",
+                action: "increase",
+                reason: "top_of_rep_range",
+                recommendedWeightLbs: 143,
+                recommendedMinReps: 8,
+                recommendedMaxReps: 10,
+                recommendedRir: 2,
+                explanation:
+                  "You completed all 3 working sets at the top of your 8-12 rep range.",
+                engineVersion: "double_progression_v1",
+                inputSnapshot: {},
+                createdAt: "2026-09-01T17:00:00.000Z",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const recommendation = screen.getByRole("region", {
+      name: "Progression recommendation",
+    });
+
+    expect(within(recommendation).getByText("Increase to 65 kg")).toBeInTheDocument();
+    expect(
+      within(recommendation).getByText(
+        "3 working sets · 8-10 reps · approximately 2 RIR",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(recommendation).getByText(/completed all 3 working sets/),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render undefined values from an incomplete legacy prescription", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          status: "completed",
+          completedAt: "2026-09-01T17:00:00.000Z",
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              recommendation: {
+                id: "legacy-recommendation-id",
+                action: "maintain",
+                reason: "default_maintain",
+                recommendedWeightLbs: 100,
+                explanation:
+                  "Build consistency at this weight before changing it.",
+                engineVersion: "double_progression_v1",
+                inputSnapshot: {},
+                createdAt: "2026-09-01T17:00:00.000Z",
+              } as NonNullable<
+                WorkoutSession["exercises"][number]["recommendation"]
+              >,
+            },
+          ],
+        }}
+      />,
+    );
+
+    const recommendation = screen.getByRole("region", {
+      name: "Progression recommendation",
+    });
+
+    expect(within(recommendation).queryByText(/undefined/)).not.toBeInTheDocument();
+    expect(within(recommendation).queryByText(/working sets/)).not.toBeInTheDocument();
   });
 });

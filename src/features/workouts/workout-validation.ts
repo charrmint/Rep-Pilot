@@ -8,6 +8,8 @@ import type {
 export function validateWorkoutSetInput(
   input: SaveWorkoutSetInput,
 ): ValidatedWorkoutSetInput {
+  const rir = input.rir ?? null;
+
   if (!Number.isInteger(input.position) || input.position <= 0) {
     throw new Error("Set position must be a positive whole number.");
   }
@@ -24,8 +26,16 @@ export function validateWorkoutSetInput(
     throw new Error("Weight unit must be lb or kg.");
   }
 
+  if (
+    rir !== null &&
+    (!Number.isInteger(rir) || rir < 0 || rir > 10)
+  ) {
+    throw new Error("RIR must be a whole number between 0 and 10.");
+  }
+
   return {
     ...input,
+    rir,
     normalizedWeightLbs: normalizeWeightToPounds(
       input.weightValue,
       input.weightUnit,
