@@ -197,12 +197,12 @@ The implemented workout flow is:
    optional per-set RIR value. Deleting a set removes that row. Draft field
    values remain local until the user logs them.
 5. Finishing loads the two recent completed performances needed by the
-   progression engine, generates recommendations for exercises with working
-   sets, and sends the results to
-   `complete_workout_with_recommendations`. The database function persists the
-   recommendations and changes the session to `completed` atomically.
-   Abandoning changes it to `cancelled`; already logged sets remain available
-   in history.
+   progression engine and the current per-exercise strength-record baselines.
+   It generates recommendations and record events for exercises with valid
+   working sets, then sends both result sets to `complete_workout_with_results`.
+   The database function persists the results and changes the session to
+   `completed` atomically. Abandoning changes it to `cancelled`; already logged
+   sets remain available in history and do not produce records.
 6. History services expose recent sessions plus template-grouped and
    exercise-grouped views without putting query assembly in route components.
 
@@ -230,11 +230,28 @@ The implemented recommendation lifecycle builds on the persisted workout flow:
    target RIR—and includes the explanation so the decision remains
    inspectable.
 
+## Strength Record Data Flow
+
+1. Feature mappers select valid working sets for each performed exercise and
+   normalize them into the pure strength-metric input.
+2. A batched query loads the best persisted value for each exercise and record
+   type. The pure record detector compares rounded canonical values and returns
+   only first baselines or strict improvements.
+3. Application code attaches the source session exercise and the explicit ID
+   of the previous record, when one exists.
+4. `complete_workout_with_results` inserts records in the same transaction as
+   recommendations and session completion. Source/type uniqueness makes a
+   completion retry idempotent.
+5. Completed workout exercises show record values in their snapshotted display
+   unit. A first record is labeled as a baseline; later records show the prior
+   value or improvement rather than presenting every baseline as a PR.
+
 The rules and test expectations are documented in
-[progression-engine.md](./progression-engine.md). Recommendation rules and
-application orchestration must remain outside route files and database
-procedures. PostgreSQL stores the decision and audit context but does not hide
-the rule that produced it.
+[progression-engine.md](./progression-engine.md). Strength-record definitions,
+comparison semantics, canonical units, and backfill behavior are documented in
+[strength-records.md](./strength-records.md). Recommendation and record rules
+must remain outside route files and database procedures. PostgreSQL stores the
+decision or event and audit context but does not hide the rule that produced it.
 
 ## Data Ownership
 

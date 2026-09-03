@@ -1,4 +1,7 @@
-import { provisionDemoDataRows } from "./demo-queries";
+import {
+  provisionDemoDataRows,
+  provisionDemoStrengthRecordBaselinesRows,
+} from "./demo-queries";
 import type { DemoUserIdentity } from "./types";
 
 export async function provisionDemoData(
@@ -9,4 +12,5 @@ export async function provisionDemoData(
   }
 
   await provisionDemoDataRows();
+  await provisionDemoStrengthRecordBaselinesRows();
 }

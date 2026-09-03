@@ -295,7 +295,18 @@ Notes:
 
 - This table is normalized through `workout_session_exercise_id`.
 - `exercise_id` and `workout_session_id` can be derived through joins.
+- A source session exercise can produce at most one row per record type.
+- Weight and estimated-one-rep-max records use `lb`; volume records use
+  `lb_reps`.
+- A non-null `previous_record_id` must point to the current lower-valued record
+  for the same user, exercise, record type, and unit.
+- Recommendations, record events, and workout completion are persisted by one
+  atomic database function.
+- Historical and demo data receive one all-time-best baseline per exercise and
+  record type. Future strict improvements form the explicit record chain.
 - Add denormalized columns later only if record queries become painful.
+- Detailed calculation and comparison rules are documented in
+  [strength-records.md](./strength-records.md).
 
 ## Enum Values
 
@@ -357,6 +368,10 @@ strength_record_value_unit:
 - Template exercise selections should be unique per template.
 - Session exercise positions should be unique per workout session.
 - Set positions should be unique per workout session exercise.
+- Strength-record source and record type should be unique together.
+- Strength-record value units must match their record type.
+- A linked previous strength record must belong to the same user and exercise,
+  use the same type and unit, occur no later, and have a smaller value.
 - A user should have at most one `in_progress` workout session.
 - Template names should be unique per user.
 
@@ -411,7 +426,9 @@ workout_sets rows
   -> feature mapper
   -> StrengthSet[]
   -> detectStrengthRecords()
-  -> strength_records rows
+  -> source and previous-record mapping
+  -> complete_workout_with_results()
+  -> strength_records rows and completed workout
 ```
 
 Database rows include IDs, ownership, timestamps, units, and relationships. Domain types should stay focused on the values needed by pure functions.
