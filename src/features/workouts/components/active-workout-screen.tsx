@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import type { WorkoutSession, WorkoutSet } from "../types";
 import { RecommendationSummary } from "../../progression/components/recommendation-summary";
+import { StrengthRecordSummary } from "../../records/components/strength-record-summary";
 import { LocalDateTime } from "./local-date-time";
 import { WorkoutExerciseCard } from "./workout-exercise-card";
 import { WorkoutLifecycleControls } from "./workout-lifecycle-controls";
@@ -170,6 +171,12 @@ function ReadOnlyWorkout({ workout }: { workout: WorkoutSession }) {
                 ))}
               </ol>
             )}
+            {isCompleted ? (
+              <StrengthRecordSummary
+                records={exercise.records}
+                displayUnit={exercise.plannedWeightUnit}
+              />
+            ) : null}
             {isCompleted && exercise.recommendation ? (
               <RecommendationSummary
                 recommendation={exercise.recommendation}

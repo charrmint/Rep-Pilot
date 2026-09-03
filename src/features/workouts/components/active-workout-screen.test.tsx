@@ -40,6 +40,7 @@ const ACTIVE_WORKOUT: WorkoutSession = {
       weightIncrementLbs: 5,
       previousPerformance: null,
       recommendation: null,
+      records: [],
       sets: [],
     },
   ],
@@ -212,6 +213,99 @@ describe("ActiveWorkoutScreen", () => {
     expect(
       within(recommendation).getByText(/completed all 3 working sets/),
     ).toBeInTheDocument();
+  });
+
+  it("shows strength records on a completed exercise before its recommendation", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          status: "completed",
+          completedAt: "2026-09-01T17:00:00.000Z",
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              records: [
+                {
+                  id: "record-id",
+                  userId: "user-id",
+                  workoutSessionExerciseId: "session-exercise-id",
+                  type: "highest_weight",
+                  value: 185,
+                  valueUnit: "lb",
+                  exerciseId: "exercise-id",
+                  workoutSessionId: "session-id",
+                  previousRecordId: null,
+                  performedAt: "2026-09-01T17:00:00.000Z",
+                  createdAt: "2026-09-01T17:00:00.000Z",
+                },
+              ],
+              recommendation: {
+                id: "recommendation-id",
+                action: "maintain",
+                reason: "within_rep_range",
+                recommendedWeightLbs: 185,
+                recommendedMinReps: 8,
+                recommendedMaxReps: 10,
+                recommendedRir: 2,
+                explanation:
+                  "Build consistency at this weight before changing it.",
+                engineVersion: "double_progression_v1",
+                inputSnapshot: {},
+                createdAt: "2026-09-01T17:00:00.000Z",
+              },
+            },
+          ],
+        }}
+      />,
+    );
+
+    const recordRegion = screen.getByRole("region", {
+      name: "Strength records",
+    });
+    const recommendationRegion = screen.getByRole("region", {
+      name: "Progression recommendation",
+    });
+
+    expect(within(recordRegion).getByText("185 lb")).toBeInTheDocument();
+    expect(
+      recordRegion.compareDocumentPosition(recommendationRegion) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("does not show strength records on an active workout", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              records: [
+                {
+                  id: "record-id",
+                  userId: "user-id",
+                  workoutSessionExerciseId: "session-exercise-id",
+                  type: "highest_weight",
+                  value: 185,
+                  valueUnit: "lb",
+                  exerciseId: "exercise-id",
+                  workoutSessionId: "session-id",
+                  previousRecordId: null,
+                  performedAt: "2026-09-01T17:00:00.000Z",
+                  createdAt: "2026-09-01T17:00:00.000Z",
+                },
+              ],
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("region", { name: "Strength records" }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not render undefined values from an incomplete legacy prescription", () => {

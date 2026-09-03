@@ -11,6 +11,10 @@ import type {
   PersistedProgressionRecommendation,
   PreparedProgressionRecommendation,
 } from "../progression/types";
+import type {
+  PersistedStrengthRecord,
+  PreparedStrengthRecord,
+} from "../records/types";
 import type { WorkoutTemplateRow } from "../templates/types";
 
 export type WorkoutSessionRow = Tables<"workout_sessions">;
@@ -180,6 +184,7 @@ export interface WorkoutSessionExercise {
   weightIncrementLbs: number;
   previousPerformance: PreviousExercisePerformance | null;
   recommendation: PersistedProgressionRecommendation | null;
+  records: PersistedStrengthRecord[];
   sets: WorkoutSet[];
 }
 
@@ -221,4 +226,9 @@ export interface CompleteWorkoutWithRecommendationsInput {
   sessionId: string;
   completedAt: string;
   recommendations: PreparedProgressionRecommendation[];
+}
+
+export interface CompleteWorkoutWithResultsInput
+  extends CompleteWorkoutWithRecommendationsInput {
+  strengthRecords: PreparedStrengthRecord[];
 }

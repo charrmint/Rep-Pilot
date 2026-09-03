@@ -7,6 +7,7 @@ import type {
   WorkoutSetRow,
 } from "./types";
 import type { ProgressionRecommendationRow } from "../progression/types";
+import type { PersistedStrengthRecord } from "../records/types";
 import { mapWorkoutSessionRowsToWorkoutSession } from "./workout-mappers";
 
 const SESSION_ROW: WorkoutSessionRowWithTemplate = {
@@ -91,6 +92,7 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
 
     expect(workout.exercises[0].previousPerformance).toBeNull();
     expect(workout.exercises[0].recommendation).toBeNull();
+    expect(workout.exercises[0].records).toEqual([]);
   });
 
   it("attaches a persisted recommendation to its source exercise", () => {
@@ -131,6 +133,41 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
       inputSnapshot: { schema_version: "progression_input_v1" },
       createdAt: "2026-09-01T17:00:00.000Z",
     });
+  });
+
+  it("attaches completed strength records and nested previous records to their source exercise", () => {
+    const strengthRecord: PersistedStrengthRecord = {
+      id: "strength-record-id",
+      userId: "user-id",
+      workoutSessionExerciseId: "current-session-exercise-id",
+      type: "highest_weight",
+      value: 150,
+      valueUnit: "lb",
+      exerciseId: "bench-press-id",
+      workoutSessionId: "current-session-id",
+      performedAt: "2026-09-01T17:00:00.000Z",
+      previousRecordId: "previous-record-id",
+      createdAt: "2026-09-01T17:00:00.000Z",
+      previousRecord: {
+        type: "highest_weight",
+        value: 145,
+        valueUnit: "lb",
+        exerciseId: "bench-press-id",
+        workoutSessionId: "previous-session-id",
+        performedAt: "2026-08-28T17:00:00.000Z",
+      },
+    };
+
+    const workout = mapWorkoutSessionRowsToWorkoutSession(
+      { ...SESSION_ROW, status: "completed" },
+      [SESSION_EXERCISE_ROW],
+      [],
+      [],
+      [],
+      [strengthRecord],
+    );
+
+    expect(workout.exercises[0].records).toEqual([strengthRecord]);
   });
 });
 

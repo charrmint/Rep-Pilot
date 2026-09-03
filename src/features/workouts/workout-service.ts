@@ -1,4 +1,13 @@
 import {
+  filterValidWorkingStrengthSetRows,
+  hasValidWorkingStrengthSets,
+  prepareStrengthRecords,
+} from "../records/strength-record-mappers";
+import {
+  listLatestStrengthRecordBaselinesByExercise,
+  listStrengthRecordsForSessionExercises,
+} from "../records/strength-record-queries";
+import {
   mapExerciseHistoryPerformanceRows,
   mapExerciseHistorySummaryRows,
   mapTemplateHistorySummaryRows,
@@ -12,7 +21,7 @@ import {
   listProgressionRecommendationRows,
   listRecentProgressionExerciseRows,
 } from "../progression/progression-queries";
-import { completeWorkoutWithRecommendationsRow } from "./workout-completion-queries";
+import { completeWorkoutWithResultsRow } from "./workout-completion-queries";
 import {
   createWorkoutSetRow,
   deleteWorkoutSetRow,
@@ -83,25 +92,32 @@ export async function getWorkoutSession({
     sessionId,
   });
   const sessionExerciseIds = exerciseRows.map((row) => row.id);
-  const [setRows, previousExerciseRows, recommendationRows] = await Promise.all([
-    listWorkoutSetRows({
-      userId,
-      sessionExerciseIds,
-    }),
-    sessionRow.status === "in_progress"
-      ? listPreviousWorkoutSessionExerciseRows({
-          userId,
-          currentSessionId: sessionId,
-          exerciseIds: exerciseRows.map((row) => row.exercise_id),
-        })
-      : Promise.resolve([]),
-    sessionRow.status === "completed"
-      ? listProgressionRecommendationRows({
-          userId,
-          sessionExerciseIds,
-        })
-      : Promise.resolve([]),
-  ]);
+  const [setRows, previousExerciseRows, recommendationRows, strengthRecords] =
+    await Promise.all([
+      listWorkoutSetRows({
+        userId,
+        sessionExerciseIds,
+      }),
+      sessionRow.status === "in_progress"
+        ? listPreviousWorkoutSessionExerciseRows({
+            userId,
+            currentSessionId: sessionId,
+            exerciseIds: exerciseRows.map((row) => row.exercise_id),
+          })
+        : Promise.resolve([]),
+      sessionRow.status === "completed"
+        ? listProgressionRecommendationRows({
+            userId,
+            sessionExerciseIds,
+          })
+        : Promise.resolve([]),
+      sessionRow.status === "completed"
+        ? listStrengthRecordsForSessionExercises({
+            userId,
+            sessionExerciseIds,
+          })
+        : Promise.resolve([]),
+    ]);
 
   return mapWorkoutSessionRowsToWorkoutSession(
     sessionRow,
@@ -109,6 +125,7 @@ export async function getWorkoutSession({
     setRows,
     previousExerciseRows,
     recommendationRows,
+    strengthRecords,
   );
 }
 
@@ -304,25 +321,44 @@ export async function finishWorkout({
   });
 
   if (setRows.length === 0) {
-    throw new Error("Log at least one set before finishing the workout.");
+    throw new Error(
+      "Log at least one valid working set before finishing the workout.",
+    );
   }
 
   const exercisesWithWorkingSets = exerciseRows.filter((exerciseRow) =>
-    setRows.some(
-      (setRow) =>
-        setRow.workout_session_exercise_id === exerciseRow.id &&
-        setRow.kind === "working",
+    hasValidWorkingStrengthSets({ exerciseRow, setRows }),
+  );
+
+  if (exercisesWithWorkingSets.length === 0) {
+    throw new Error(
+      "Log at least one valid working set before finishing the workout.",
+    );
+  }
+
+  const completedAt = new Date().toISOString();
+  const validWorkingSetRows = filterValidWorkingStrengthSetRows(setRows);
+  const participatingSetRows = validWorkingSetRows.filter((setRow) =>
+    exercisesWithWorkingSets.some(
+      (exerciseRow) =>
+        exerciseRow.id === setRow.workout_session_exercise_id,
     ),
   );
-  const recentExerciseRows = await listRecentProgressionExerciseRows({
-    userId,
-    currentSessionId: sessionId,
-    exerciseIds: exercisesWithWorkingSets.map((row) => row.exercise_id),
-  });
+  const [recentExerciseRows, previousRecordsByExerciseId] = await Promise.all([
+    listRecentProgressionExerciseRows({
+      userId,
+      currentSessionId: sessionId,
+      exerciseIds: exercisesWithWorkingSets.map((row) => row.exercise_id),
+    }),
+    listLatestStrengthRecordBaselinesByExercise({
+      userId,
+      exerciseIds: exercisesWithWorkingSets.map((row) => row.exercise_id),
+    }),
+  ]);
   const recommendations = exercisesWithWorkingSets.map((exerciseRow) => {
     const recommendation = prepareProgressionRecommendation({
       exerciseRow,
-      setRows,
+      setRows: participatingSetRows,
       recentExerciseRows,
     });
 
@@ -332,11 +368,21 @@ export async function finishWorkout({
 
     return recommendation;
   });
+  const strengthRecords = exercisesWithWorkingSets.flatMap((exerciseRow) =>
+    prepareStrengthRecords({
+      exerciseRow,
+      setRows: participatingSetRows,
+      previousRecords:
+        previousRecordsByExerciseId.get(exerciseRow.exercise_id) ?? {},
+      performedAt: completedAt,
+    }),
+  );
 
-  await completeWorkoutWithRecommendationsRow({
+  await completeWorkoutWithResultsRow({
     sessionId,
-    completedAt: new Date().toISOString(),
+    completedAt,
     recommendations,
+    strengthRecords,
   });
 }
 

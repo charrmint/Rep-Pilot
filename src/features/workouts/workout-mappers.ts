@@ -22,6 +22,7 @@ import type {
 } from "./types";
 import { mapProgressionRecommendationRow } from "../progression/progression-mappers";
 import type { ProgressionRecommendationRow } from "../progression/types";
+import type { PersistedStrengthRecord } from "../records/types";
 
 export function mapWorkoutHistorySessionRows(
   rows: WorkoutHistorySessionRow[],
@@ -113,8 +114,11 @@ export function mapWorkoutSessionRowsToWorkoutSession(
   setRows: WorkoutSetRow[],
   previousExerciseRows: PreviousWorkoutSessionExerciseRow[] = [],
   recommendationRows: ProgressionRecommendationRow[] = [],
+  strengthRecords: PersistedStrengthRecord[] = [],
 ): WorkoutSession {
   const setsBySessionExerciseId = _groupSetsBySessionExerciseId(setRows);
+  const recordsBySessionExerciseId =
+    _groupRecordsBySessionExerciseId(strengthRecords);
   const recommendationBySessionExerciseId = new Map(
     recommendationRows.map((row) => [
       row.workout_session_exercise_id,
@@ -140,6 +144,7 @@ export function mapWorkoutSessionRowsToWorkoutSession(
         setsBySessionExerciseId.get(row.id) ?? [],
         previousPerformanceByExerciseId.get(row.exercise_id) ?? null,
         recommendationBySessionExerciseId.get(row.id) ?? null,
+        recordsBySessionExerciseId.get(row.id) ?? [],
       ),
     ),
   };
@@ -191,6 +196,7 @@ function _mapWorkoutSessionExerciseRow(
   sets: WorkoutSet[],
   previousPerformance: PreviousExercisePerformance | null,
   recommendation: WorkoutSessionExercise["recommendation"],
+  records: PersistedStrengthRecord[],
 ): WorkoutSessionExercise {
   return {
     id: row.id,
@@ -206,6 +212,7 @@ function _mapWorkoutSessionExerciseRow(
     weightIncrementLbs: row.weight_increment_lbs,
     previousPerformance,
     recommendation,
+    records,
     sets,
   };
 }
@@ -231,6 +238,25 @@ function _groupSetsBySessionExerciseId(
 
     group.push(mapWorkoutSetRowToWorkoutSet(row));
     groups.set(row.workout_session_exercise_id, group);
+  }
+
+  return groups;
+}
+
+function _groupRecordsBySessionExerciseId(
+  records: PersistedStrengthRecord[],
+): Map<string, PersistedStrengthRecord[]> {
+  const groups = new Map<string, PersistedStrengthRecord[]>();
+
+  for (const record of records) {
+    const group = groups.get(record.workoutSessionExerciseId) ?? [];
+
+    group.push(record);
+    groups.set(record.workoutSessionExerciseId, group);
+  }
+
+  for (const group of groups.values()) {
+    group.sort((left, right) => left.type.localeCompare(right.type));
   }
 
   return groups;
