@@ -485,7 +485,20 @@ export type Database = {
         }
         Returns: undefined
       }
+      complete_workout_with_results: {
+        Args: {
+          p_completed_at: string
+          p_recommendations?: Json
+          p_session_id: string
+          p_strength_records?: Json
+        }
+        Returns: undefined
+      }
       provision_demo_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      provision_demo_strength_record_baselines: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
