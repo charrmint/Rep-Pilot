@@ -192,7 +192,9 @@ The implemented workout flow is:
    `workout_sessions` row, and snapshots the ordered template exercise
    configuration into `workout_session_exercises`.
 3. `/workouts/[sessionId]` loads the persisted session exercises, logged sets,
-   and latest completed working-set performance for each exercise.
+   and latest valid completed working-set performance for each exercise. For an
+   active workout, it also loads the recommendation belonging to that exact
+   prior session exercise.
 4. Each log or update action persists one `workout_sets` row, including an
    optional per-set RIR value. Deleting a set removes that row. Draft field
    values remain local until the user logs them.
@@ -229,6 +231,18 @@ The implemented recommendation lifecycle builds on the persisted workout flow:
    the snapshotted exercise unit—weight, retained working sets, rep range, and
    target RIR—and includes the explanation so the decision remains
    inspectable.
+6. A later active workout carries forward the recommendation only when it
+   belongs to the exact completed performance selected as previous context.
+   Recommendations follow exercise identity across templates; the read path
+   does not fall back to an older recommendation when the latest performance
+   has none.
+7. Applying a carried recommendation updates the weight field of unsaved set
+   drafts only. It does not overwrite logged sets, prefill actual reps or RIR,
+   mutate a workout template, or change the persisted historical
+   recommendation.
+8. Demo provisioning runs the same TypeScript progression mapper and engine
+   used at workout completion, then inserts missing recommendation rows without
+   overwriting existing results.
 
 ## Strength Record Data Flow
 
