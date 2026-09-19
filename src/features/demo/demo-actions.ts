@@ -28,6 +28,7 @@ export async function startDemoAction(
     const user = existingUser ?? (await signInAnonymously());
 
     await provisionDemoData({
+      userId: user.id,
       isAnonymous: user.is_anonymous === true,
     });
     revalidatePath("/templates");

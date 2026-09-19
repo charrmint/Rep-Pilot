@@ -116,6 +116,8 @@ describe("ActiveWorkoutScreen", () => {
                 workoutSessionId: "previous-session-id",
                 workoutSessionExerciseId: "previous-session-exercise-id",
                 startedAt: "2026-08-28T16:00:00.000Z",
+                targetSets: 2,
+                recommendation: null,
                 sets: [
                   {
                     id: "previous-set-1",
@@ -151,6 +153,190 @@ describe("ActiveWorkoutScreen", () => {
 
     expect(within(previousPerformance).getByText("130 lb × 10")).toBeInTheDocument();
     expect(within(previousPerformance).getByText("130 lb × 9")).toBeInTheDocument();
+  });
+
+  it("shows the previous workout suggestion above previous performance", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              previousPerformance: _buildPreviousPerformance({
+                targetSets: 2,
+                recommendation: _buildRecommendation({
+                  action: "increase",
+                  recommendedWeightLbs: 140,
+                  recommendedMinReps: 6,
+                  recommendedMaxReps: 8,
+                  recommendedRir: 1,
+                  explanation: "Last workout cleared the target cleanly.",
+                }),
+              }),
+            },
+          ],
+        }}
+      />,
+    );
+
+    const recommendation = screen.getByRole("region", {
+      name: "Progression recommendation",
+    });
+    const previousPerformance = screen.getByRole("region", {
+      name: "Previous performance for Bench Press",
+    });
+
+    expect(
+      within(recommendation).getByText("Suggested from last workout"),
+    ).toBeInTheDocument();
+    expect(within(recommendation).getByText("Increase to 140 lb")).toBeInTheDocument();
+    expect(
+      within(recommendation).getByText(
+        "2 working sets · 6-8 reps · approximately 1 RIR",
+      ),
+    ).toBeInTheDocument();
+    expect(
+      within(recommendation).getByText("Last workout cleared the target cleanly."),
+    ).toBeInTheDocument();
+    expect(
+      recommendation.compareDocumentPosition(previousPerformance) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it("does not offer to apply review or incomplete previous workout suggestions", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              previousPerformance: _buildPreviousPerformance({
+                recommendation: _buildRecommendation({
+                  action: "review",
+                  recommendedWeightLbs: 145,
+                  explanation: "Review this lift before loading it again.",
+                }),
+              }),
+            },
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              id: "session-exercise-id-2",
+              exerciseId: "exercise-id-2",
+              exerciseName: "Incline Press",
+              position: 2,
+              previousPerformance: _buildPreviousPerformance({
+                workoutSessionExerciseId: "previous-session-exercise-id-2",
+                recommendation: _buildRecommendation({
+                  id: "recommendation-id-2",
+                  action: "maintain",
+                  recommendedWeightLbs: 140,
+                  recommendedMinReps: null,
+                  explanation: "Legacy recommendation without a complete prescription.",
+                }),
+              }),
+            },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Review before your next session")).toBeInTheDocument();
+    expect(screen.getByText("Stay at 140 lb")).toBeInTheDocument();
+    expect(
+      screen.getByText("Legacy recommendation without a complete prescription."),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Use suggested weight" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("applies a reduced suggested weight to unsaved rows without changing saved rows, reps, or RIR", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              plannedWeightValue: 130,
+              sets: [
+                {
+                  id: "saved-set-id",
+                  position: 1,
+                  reps: 8,
+                  weightValue: 135,
+                  weightUnit: "lb",
+                  normalizedWeightLbs: 135,
+                  rir: 1,
+                  performedAt: "2026-09-01T16:05:00.000Z",
+                },
+              ],
+              previousPerformance: _buildPreviousPerformance({
+                recommendation: _buildRecommendation({
+                  action: "reduce",
+                  reason: "repeated_underperformance",
+                  recommendedWeightLbs: 125,
+                }),
+              }),
+            },
+          ],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested weight" }));
+
+    const weightInputs = screen.getAllByLabelText("Weight (lb)");
+    const repInputs = screen.getAllByLabelText("Reps");
+
+    expect(weightInputs[0]).toHaveValue(135);
+    expect(weightInputs[1]).toHaveValue(125);
+    expect(weightInputs[2]).toHaveValue(125);
+    expect(repInputs[0]).toHaveValue(8);
+    expect(repInputs[1]).toHaveValue(null);
+    expect(repInputs[2]).toHaveValue(null);
+    expect(
+      within(screen.getByRole("listbox", { name: "RIR for set 1" })).getByRole(
+        "option",
+        { name: "1" },
+      ),
+    ).toHaveAttribute("aria-selected", "true");
+
+    fireEvent.change(weightInputs[1], { target: { value: "142" } });
+    expect(weightInputs[1]).toHaveValue(142);
+
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested weight" }));
+    expect(weightInputs[1]).toHaveValue(125);
+  });
+
+  it("applies suggested weight in the current kg display unit", () => {
+    render(
+      <ActiveWorkoutScreen
+        initialWorkout={{
+          ...ACTIVE_WORKOUT,
+          exercises: [
+            {
+              ...ACTIVE_WORKOUT.exercises[0],
+              plannedWeightUnit: "kg",
+              plannedWeightValue: 60,
+              previousPerformance: _buildPreviousPerformance({
+                recommendation: _buildRecommendation({
+                  action: "increase",
+                  recommendedWeightLbs: 140,
+                }),
+              }),
+            },
+          ],
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Use suggested weight" }));
+
+    expect(screen.getAllByLabelText("Weight (kg)")[0]).toHaveValue(63.64);
   });
 
   it("renders completed workouts as read-only", () => {
@@ -345,3 +531,56 @@ describe("ActiveWorkoutScreen", () => {
     expect(within(recommendation).queryByText(/working sets/)).not.toBeInTheDocument();
   });
 });
+
+function _buildPreviousPerformance({
+  recommendation = _buildRecommendation(),
+  targetSets = 3,
+  workoutSessionExerciseId = "previous-session-exercise-id",
+}: {
+  recommendation?: NonNullable<
+    WorkoutSession["exercises"][number]["recommendation"]
+  >;
+  targetSets?: number;
+  workoutSessionExerciseId?: string;
+} = {}): WorkoutSession["exercises"][number]["previousPerformance"] {
+  return {
+    workoutSessionId: "previous-session-id",
+    workoutSessionExerciseId,
+    startedAt: "2026-08-28T16:00:00.000Z",
+    targetSets,
+    recommendation,
+    sets: [
+      {
+        id: "previous-set-1",
+        position: 1,
+        reps: 10,
+        weightValue: 135,
+        weightUnit: "lb",
+        normalizedWeightLbs: 135,
+        rir: 2,
+        performedAt: "2026-08-28T16:05:00.000Z",
+      },
+    ],
+  };
+}
+
+function _buildRecommendation(
+  overrides: Partial<
+    NonNullable<WorkoutSession["exercises"][number]["recommendation"]>
+  > = {},
+): NonNullable<WorkoutSession["exercises"][number]["recommendation"]> {
+  return {
+    id: "recommendation-id",
+    action: "increase",
+    reason: "top_of_rep_range",
+    recommendedWeightLbs: 140,
+    recommendedMinReps: 8,
+    recommendedMaxReps: 10,
+    recommendedRir: 2,
+    explanation: "Increase the load next time.",
+    engineVersion: "double_progression_v1",
+    inputSnapshot: {},
+    createdAt: "2026-08-28T17:00:00.000Z",
+    ...overrides,
+  };
+}

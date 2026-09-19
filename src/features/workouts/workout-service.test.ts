@@ -15,12 +15,15 @@ import type {
 import { completeWorkoutWithResultsRow } from "./workout-completion-queries";
 import {
   getWorkoutSessionRow,
+  listPreviousWorkoutSessionExerciseRows,
   listWorkoutSessionExerciseRows,
   listWorkoutSetRows,
   updateWorkoutSessionRow,
 } from "./workout-queries";
-import { finishWorkout } from "./workout-service";
+import { finishWorkout, getWorkoutSession } from "./workout-service";
+import type { ProgressionRecommendationRow } from "../progression/types";
 import type {
+  PreviousWorkoutSessionExerciseRow,
   WorkoutSessionExerciseRow,
   WorkoutSessionRowWithTemplate,
   WorkoutSetRow,
@@ -90,6 +93,152 @@ const EXERCISE_ROW: WorkoutSessionExerciseRow = {
   created_at: "2026-09-01T16:00:00.000Z",
   updated_at: "2026-09-01T16:00:00.000Z",
 };
+
+describe("getWorkoutSession", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(listWorkoutSetRows).mockResolvedValue([]);
+    vi.mocked(listPreviousWorkoutSessionExerciseRows).mockResolvedValue([]);
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([]);
+    vi.mocked(listStrengthRecordsForSessionExercises).mockResolvedValue([]);
+  });
+
+  it("loads carry-forward recommendations for the exact selected previous exercises", async () => {
+    const previousExercise = _previousExerciseRow({
+      id: "previous-session-exercise-id",
+      workoutSessionId: "previous-session-id",
+    });
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue(SESSION_ROW);
+    vi.mocked(listWorkoutSessionExerciseRows).mockResolvedValue([
+      EXERCISE_ROW,
+    ]);
+    vi.mocked(listPreviousWorkoutSessionExerciseRows).mockResolvedValue([
+      previousExercise,
+    ]);
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([
+      _recommendationRow({
+        id: "previous-recommendation-id",
+        workoutSessionExerciseId: "previous-session-exercise-id",
+        recommendedWeightLbs: 140,
+      }),
+    ]);
+
+    const workout = await getWorkoutSession({
+      userId: "user-id",
+      sessionId: "session-id",
+    });
+
+    expect(listPreviousWorkoutSessionExerciseRows).toHaveBeenCalledWith({
+      userId: "user-id",
+      currentSessionId: "session-id",
+      exerciseIds: ["bench-press-id"],
+    });
+    expect(listProgressionRecommendationRows).toHaveBeenCalledWith({
+      userId: "user-id",
+      sessionExerciseIds: ["previous-session-exercise-id"],
+    });
+    expect(listStrengthRecordsForSessionExercises).not.toHaveBeenCalled();
+    expect(workout?.exercises[0].recommendation).toBeNull();
+    expect(workout?.exercises[0].previousPerformance).toEqual(
+      expect.objectContaining({
+        workoutSessionId: "previous-session-id",
+        workoutSessionExerciseId: "previous-session-exercise-id",
+        targetSets: 3,
+        recommendation: expect.objectContaining({
+          id: "previous-recommendation-id",
+          recommendedWeightLbs: 140,
+        }),
+      }),
+    );
+  });
+
+  it("does not fall back to an older recommendation for active carry-forward data", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue(SESSION_ROW);
+    vi.mocked(listWorkoutSessionExerciseRows).mockResolvedValue([
+      EXERCISE_ROW,
+    ]);
+    vi.mocked(listPreviousWorkoutSessionExerciseRows).mockResolvedValue([
+      _previousExerciseRow({
+        id: "selected-previous-session-exercise-id",
+        workoutSessionId: "selected-previous-session-id",
+      }),
+    ]);
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([
+      _recommendationRow({
+        id: "older-recommendation-id",
+        workoutSessionExerciseId: "older-session-exercise-id",
+        recommendedWeightLbs: 135,
+      }),
+    ]);
+
+    const workout = await getWorkoutSession({
+      userId: "user-id",
+      sessionId: "session-id",
+    });
+
+    expect(listProgressionRecommendationRows).toHaveBeenCalledWith({
+      userId: "user-id",
+      sessionExerciseIds: ["selected-previous-session-exercise-id"],
+    });
+    expect(workout?.exercises[0].previousPerformance?.recommendation).toBeNull();
+  });
+
+  it("keeps completed session recommendations attached to the completed exercise", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue({
+      ...SESSION_ROW,
+      status: "completed",
+      completed_at: "2026-09-01T17:00:00.000Z",
+    });
+    vi.mocked(listWorkoutSessionExerciseRows).mockResolvedValue([
+      EXERCISE_ROW,
+    ]);
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([
+      _recommendationRow({
+        id: "completed-recommendation-id",
+        workoutSessionExerciseId: "session-exercise-id",
+        recommendedWeightLbs: 140,
+      }),
+    ]);
+
+    const workout = await getWorkoutSession({
+      userId: "user-id",
+      sessionId: "session-id",
+    });
+
+    expect(listPreviousWorkoutSessionExerciseRows).not.toHaveBeenCalled();
+    expect(listProgressionRecommendationRows).toHaveBeenCalledWith({
+      userId: "user-id",
+      sessionExerciseIds: ["session-exercise-id"],
+    });
+    expect(workout?.exercises[0].previousPerformance).toBeNull();
+    expect(workout?.exercises[0].recommendation).toEqual(
+      expect.objectContaining({
+        id: "completed-recommendation-id",
+        recommendedWeightLbs: 140,
+      }),
+    );
+  });
+
+  it("does not load carry-forward data for cancelled sessions", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue({
+      ...SESSION_ROW,
+      status: "cancelled",
+    });
+    vi.mocked(listWorkoutSessionExerciseRows).mockResolvedValue([
+      EXERCISE_ROW,
+    ]);
+
+    const workout = await getWorkoutSession({
+      userId: "user-id",
+      sessionId: "session-id",
+    });
+
+    expect(listPreviousWorkoutSessionExerciseRows).not.toHaveBeenCalled();
+    expect(listProgressionRecommendationRows).not.toHaveBeenCalled();
+    expect(workout?.exercises[0].previousPerformance).toBeNull();
+    expect(workout?.exercises[0].recommendation).toBeNull();
+  });
+});
 
 describe("finishWorkout", () => {
   beforeEach(() => {
@@ -474,6 +623,56 @@ function _setRow(
     performed_at: "2026-09-01T16:05:00.000Z",
     created_at: "2026-09-01T16:05:00.000Z",
     updated_at: "2026-09-01T16:05:00.000Z",
+  };
+}
+
+function _previousExerciseRow({
+  id,
+  workoutSessionId,
+}: {
+  id: string;
+  workoutSessionId: string;
+}): PreviousWorkoutSessionExerciseRow {
+  return {
+    id,
+    exercise_id: "bench-press-id",
+    target_sets: 3,
+    workout_session_id: workoutSessionId,
+    workoutSession: {
+      started_at: "2026-08-28T16:00:00.000Z",
+    },
+    sets: [
+      _setRow(1, {
+        id: "previous-set-id",
+        sessionExerciseId: id,
+      }),
+    ],
+  };
+}
+
+function _recommendationRow({
+  id,
+  workoutSessionExerciseId,
+  recommendedWeightLbs,
+}: {
+  id: string;
+  workoutSessionExerciseId: string;
+  recommendedWeightLbs: number;
+}): ProgressionRecommendationRow {
+  return {
+    id,
+    user_id: "user-id",
+    workout_session_exercise_id: workoutSessionExerciseId,
+    action: "increase",
+    reason: "top_of_rep_range",
+    recommended_weight_lbs: recommendedWeightLbs,
+    recommended_min_reps: 8,
+    recommended_max_reps: 10,
+    recommended_rir: 2,
+    explanation: "The prior performance supports another load increment.",
+    engine_version: "double_progression_v1",
+    input_snapshot: { schema_version: "progression_input_v1" },
+    created_at: "2026-08-28T17:00:00.000Z",
   };
 }
 

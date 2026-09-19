@@ -92,7 +92,7 @@ export async function getWorkoutSession({
     sessionId,
   });
   const sessionExerciseIds = exerciseRows.map((row) => row.id);
-  const [setRows, previousExerciseRows, recommendationRows, strengthRecords] =
+  const [setRows, previousExerciseRows, ownRecommendationRows, strengthRecords] =
     await Promise.all([
       listWorkoutSetRows({
         userId,
@@ -118,6 +118,13 @@ export async function getWorkoutSession({
           })
         : Promise.resolve([]),
     ]);
+  const recommendationRows =
+    sessionRow.status === "in_progress"
+      ? await listProgressionRecommendationRows({
+          userId,
+          sessionExerciseIds: previousExerciseRows.map((row) => row.id),
+        })
+      : ownRecommendationRows;
 
   return mapWorkoutSessionRowsToWorkoutSession(
     sessionRow,

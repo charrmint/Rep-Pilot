@@ -31,7 +31,7 @@ export type WorkoutSessionRowWithTemplate = WorkoutSessionRow & {
 
 export type PreviousWorkoutSessionExerciseRow = Pick<
   WorkoutSessionExerciseRow,
-  "exercise_id" | "id" | "workout_session_id"
+  "exercise_id" | "id" | "target_sets" | "workout_session_id"
 > & {
   workoutSession: Pick<WorkoutSessionRow, "started_at">;
   sets: WorkoutSetRow[];
@@ -99,6 +99,8 @@ export interface PreviousExercisePerformance {
   workoutSessionId: string;
   workoutSessionExerciseId: string;
   startedAt: string;
+  targetSets: number;
+  recommendation: PersistedProgressionRecommendation | null;
   sets: WorkoutSet[];
 }
 

@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { poundsToKilograms } from "@/lib/units/weight";
 import type { WeightUnit } from "@/lib/units/types";
 
@@ -7,6 +9,9 @@ interface RecommendationSummaryProps {
   recommendation: PersistedProgressionRecommendation;
   displayUnit: WeightUnit;
   targetSets: number;
+  action?: ReactNode;
+  label?: string;
+  variant?: "default" | "compact";
 }
 
 const WEIGHT_FORMATTER = new Intl.NumberFormat("en-US", {
@@ -14,9 +19,12 @@ const WEIGHT_FORMATTER = new Intl.NumberFormat("en-US", {
 });
 
 export function RecommendationSummary({
+  action,
+  label = "Next session",
   recommendation,
   displayUnit,
   targetSets,
+  variant = "default",
 }: RecommendationSummaryProps) {
   const prescription = _getPrescription(recommendation);
   const repTarget = prescription
@@ -28,10 +36,12 @@ export function RecommendationSummary({
   return (
     <section
       aria-label="Progression recommendation"
-      className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-4"
+      className={`mt-4 rounded-md border border-blue-200 bg-blue-50 ${
+        variant === "compact" ? "p-3" : "p-4"
+      }`}
     >
       <p className="text-xs font-semibold uppercase tracking-wide text-blue-700">
-        Next session
+        {label}
       </p>
       <p className="mt-1 font-semibold text-blue-950">
         {_getRecommendationHeading(recommendation, displayUnit)}
@@ -45,8 +55,15 @@ export function RecommendationSummary({
       <p className="mt-1 text-sm leading-6 text-blue-900">
         {recommendation.explanation}
       </p>
+      {action ? <div className="mt-3">{action}</div> : null}
     </section>
   );
+}
+
+export function hasCompleteRecommendationPrescription(
+  recommendation: PersistedProgressionRecommendation,
+): boolean {
+  return _getPrescription(recommendation) !== null;
 }
 
 function _getRecommendationHeading(

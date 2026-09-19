@@ -78,6 +78,14 @@ explanation. The UI converts the weight into the session's display unit and
 composes the action heading. This keeps unit conversion and presentation text
 out of the progression rules.
 
+Completed-workout recommendations remain immutable historical results tied to
+their source session exercise. When the same exercise appears in a later active
+workout, the app displays the recommendation from the exact latest valid
+completed performance, even if it came from a different template. The user may
+apply an actionable `increase`, `maintain`, or `reduce` recommendation to the
+weight fields of currently unsaved sets. Applying it does not change logged
+sets, actual reps or RIR, or reusable template defaults.
+
 V1 uses a transparent RIR-adjusted Epley calculation for every evaluated set.
 It inverts each estimate at a candidate weight and, when RIR is available,
 subtracts the target RIR. Candidate selection uses the average of those
