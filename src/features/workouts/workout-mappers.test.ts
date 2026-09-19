@@ -50,6 +50,7 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
     const previousExercise: PreviousWorkoutSessionExerciseRow = {
       id: "previous-session-exercise-id",
       exercise_id: "bench-press-id",
+      target_sets: 3,
       workout_session_id: "previous-session-id",
       workoutSession: {
         started_at: "2026-08-28T16:00:00.000Z",
@@ -68,6 +69,8 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
       workoutSessionId: "previous-session-id",
       workoutSessionExerciseId: "previous-session-exercise-id",
       startedAt: "2026-08-28T16:00:00.000Z",
+      targetSets: 3,
+      recommendation: null,
       sets: [
         {
           id: "previous-set-id",
@@ -95,22 +98,96 @@ describe("mapWorkoutSessionRowsToWorkoutSession", () => {
     expect(workout.exercises[0].records).toEqual([]);
   });
 
-  it("attaches a persisted recommendation to its source exercise", () => {
-    const recommendation: ProgressionRecommendationRow = {
-      id: "recommendation-id",
-      user_id: "user-id",
-      workout_session_exercise_id: "current-session-exercise-id",
-      action: "increase",
-      reason: "top_of_rep_range",
-      recommended_weight_lbs: 140,
-      recommended_min_reps: 8,
-      recommended_max_reps: 10,
-      recommended_rir: 2,
-      explanation: "All target sets reached the top of the rep range.",
-      engine_version: "double_progression_v1",
-      input_snapshot: { schema_version: "progression_input_v1" },
-      created_at: "2026-09-01T17:00:00.000Z",
+  it("attaches a previous performance recommendation by exact source exercise", () => {
+    const selectedPreviousExercise: PreviousWorkoutSessionExerciseRow = {
+      id: "selected-previous-session-exercise-id",
+      exercise_id: "bench-press-id",
+      target_sets: 4,
+      workout_session_id: "selected-previous-session-id",
+      workoutSession: {
+        started_at: "2026-08-28T16:00:00.000Z",
+      },
+      sets: [
+        _workoutSetRow({
+          id: "selected-previous-set-id",
+          workoutSessionExerciseId: "selected-previous-session-exercise-id",
+        }),
+      ],
     };
+
+    const workout = mapWorkoutSessionRowsToWorkoutSession(
+      SESSION_ROW,
+      [SESSION_EXERCISE_ROW],
+      [],
+      [selectedPreviousExercise],
+      [
+        _recommendationRow({
+          id: "selected-recommendation-id",
+          workoutSessionExerciseId: "selected-previous-session-exercise-id",
+          recommendedWeightLbs: 140,
+        }),
+        _recommendationRow({
+          id: "stale-recommendation-id",
+          workoutSessionExerciseId: "older-session-exercise-id",
+          recommendedWeightLbs: 135,
+        }),
+      ],
+    );
+
+    expect(workout.exercises[0].recommendation).toBeNull();
+    expect(workout.exercises[0].previousPerformance).toEqual(
+      expect.objectContaining({
+        workoutSessionId: "selected-previous-session-id",
+        workoutSessionExerciseId: "selected-previous-session-exercise-id",
+        targetSets: 4,
+        recommendation: expect.objectContaining({
+          id: "selected-recommendation-id",
+          recommendedWeightLbs: 140,
+        }),
+      }),
+    );
+  });
+
+  it("does not attach an older recommendation when the selected previous performance has none", () => {
+    const selectedPreviousExercise: PreviousWorkoutSessionExerciseRow = {
+      id: "selected-previous-session-exercise-id",
+      exercise_id: "bench-press-id",
+      target_sets: 3,
+      workout_session_id: "selected-previous-session-id",
+      workoutSession: {
+        started_at: "2026-08-28T16:00:00.000Z",
+      },
+      sets: [
+        _workoutSetRow({
+          id: "selected-previous-set-id",
+          workoutSessionExerciseId: "selected-previous-session-exercise-id",
+        }),
+      ],
+    };
+
+    const workout = mapWorkoutSessionRowsToWorkoutSession(
+      SESSION_ROW,
+      [SESSION_EXERCISE_ROW],
+      [],
+      [selectedPreviousExercise],
+      [
+        _recommendationRow({
+          id: "stale-recommendation-id",
+          workoutSessionExerciseId: "older-session-exercise-id",
+          recommendedWeightLbs: 135,
+        }),
+      ],
+    );
+
+    expect(workout.exercises[0].previousPerformance?.recommendation).toBeNull();
+  });
+
+  it("attaches a persisted recommendation to its source exercise", () => {
+    const recommendation = _recommendationRow({
+      id: "recommendation-id",
+      workoutSessionExerciseId: "current-session-exercise-id",
+      recommendedWeightLbs: 140,
+    });
 
     const workout = mapWorkoutSessionRowsToWorkoutSession(
       { ...SESSION_ROW, status: "completed" },
@@ -194,5 +271,31 @@ function _workoutSetRow({
     performed_at: "2026-08-28T16:05:00.000Z",
     created_at: "2026-08-28T16:05:00.000Z",
     updated_at: "2026-08-28T16:05:00.000Z",
+  };
+}
+
+function _recommendationRow({
+  id,
+  workoutSessionExerciseId,
+  recommendedWeightLbs,
+}: {
+  id: string;
+  workoutSessionExerciseId: string;
+  recommendedWeightLbs: number;
+}): ProgressionRecommendationRow {
+  return {
+    id,
+    user_id: "user-id",
+    workout_session_exercise_id: workoutSessionExerciseId,
+    action: "increase",
+    reason: "top_of_rep_range",
+    recommended_weight_lbs: recommendedWeightLbs,
+    recommended_min_reps: 8,
+    recommended_max_reps: 10,
+    recommended_rir: 2,
+    explanation: "All target sets reached the top of the rep range.",
+    engine_version: "double_progression_v1",
+    input_snapshot: { schema_version: "progression_input_v1" },
+    created_at: "2026-09-01T17:00:00.000Z",
   };
 }

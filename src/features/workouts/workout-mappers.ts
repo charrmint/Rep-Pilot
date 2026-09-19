@@ -128,7 +128,10 @@ export function mapWorkoutSessionRowsToWorkoutSession(
   const previousPerformanceByExerciseId = new Map(
     previousExerciseRows.map((row) => [
       row.exercise_id,
-      _mapPreviousExercisePerformance(row),
+      _mapPreviousExercisePerformance(
+        row,
+        recommendationBySessionExerciseId.get(row.id) ?? null,
+      ),
     ]),
   );
 
@@ -219,12 +222,15 @@ function _mapWorkoutSessionExerciseRow(
 
 function _mapPreviousExercisePerformance(
   row: PreviousWorkoutSessionExerciseRow,
+  recommendation: PreviousExercisePerformance["recommendation"],
 ): PreviousExercisePerformance {
   return {
     workoutSessionId: row.workout_session_id,
     workoutSessionExerciseId: row.id,
     startedAt: row.workoutSession.started_at,
-    sets: row.sets.map(mapWorkoutSetRowToWorkoutSet),
+    targetSets: row.target_sets,
+    recommendation,
+    sets: _mapWorkingSetRows(row.sets),
   };
 }
 

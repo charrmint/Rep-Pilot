@@ -1,8 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type ComponentRef, useMemo, useRef, useState } from "react";
+
+import { poundsToKilograms } from "@/lib/units/weight";
 
 import type { WorkoutSessionExercise, WorkoutSet } from "../types";
+import {
+  hasCompleteRecommendationPrescription,
+  RecommendationSummary,
+} from "../../progression/components/recommendation-summary";
 import { PreviousExercisePerformance } from "./previous-exercise-performance";
 import { WorkoutSetRow } from "./workout-set-row";
 
@@ -18,10 +24,25 @@ export function WorkoutExerciseCard({
   onSetDeleted,
 }: WorkoutExerciseCardProps) {
   const [extraPositions, setExtraPositions] = useState<number[]>([]);
+  const draftSetRowsRef = useRef(
+    new Map<number, ComponentRef<typeof WorkoutSetRow>>(),
+  );
   const positions = useMemo(
     () => _getSetPositions(exercise, extraPositions),
     [exercise, extraPositions],
   );
+  const previousPerformance = exercise.previousPerformance;
+  const previousRecommendation = previousPerformance?.recommendation ?? null;
+  const suggestedWeightValue = previousRecommendation
+    ? _getSuggestedWeightValue(
+        previousRecommendation,
+        exercise.plannedWeightUnit,
+      )
+    : null;
+  const canApplySuggestedWeight =
+    previousRecommendation !== null &&
+    suggestedWeightValue !== null &&
+    _isActionableWeightSuggestion(previousRecommendation);
 
   function _addSet() {
     const nextPosition = Math.max(...positions, 0) + 1;
@@ -37,6 +58,16 @@ export function WorkoutExerciseCard({
     }
 
     onSetDeleted(exercise.id, set);
+  }
+
+  function _applySuggestedWeight() {
+    if (!suggestedWeightValue) {
+      return;
+    }
+
+    for (const row of draftSetRowsRef.current.values()) {
+      row.applySuggestedWeight(suggestedWeightValue);
+    }
   }
 
   return (
@@ -60,6 +91,27 @@ export function WorkoutExerciseCard({
         </span>
       </div>
 
+      {previousPerformance && previousRecommendation ? (
+        <RecommendationSummary
+          recommendation={previousRecommendation}
+          displayUnit={exercise.plannedWeightUnit}
+          targetSets={previousPerformance.targetSets}
+          label="Suggested from last workout"
+          variant="compact"
+          action={
+            canApplySuggestedWeight ? (
+              <button
+                type="button"
+                onClick={_applySuggestedWeight}
+                className="min-h-10 rounded-md bg-blue-700 px-3 text-sm font-semibold text-white transition hover:bg-blue-800"
+              >
+                Use suggested weight
+              </button>
+            ) : null
+          }
+        />
+      ) : null}
+
       <PreviousExercisePerformance
         exerciseName={exercise.exerciseName}
         performance={exercise.previousPerformance}
@@ -77,6 +129,17 @@ export function WorkoutExerciseCard({
           return (
             <WorkoutSetRow
               key={workoutSet?.id ?? `draft-${position}`}
+              ref={
+                workoutSet
+                  ? undefined
+                  : (row) => {
+                      if (row) {
+                        draftSetRowsRef.current.set(position, row);
+                      } else {
+                        draftSetRowsRef.current.delete(position);
+                      }
+                    }
+              }
               sessionExerciseId={exercise.id}
               position={position}
               defaultWeightValue={
@@ -123,4 +186,41 @@ function _getSetPositions(
   }
 
   return [...positions].sort((left, right) => left - right);
+}
+
+function _isActionableWeightSuggestion(
+  recommendation: NonNullable<WorkoutSessionExercise["recommendation"]>,
+): boolean {
+  return (
+    recommendation.action !== "review" &&
+    _getRecommendedWeightLbs(recommendation) !== null &&
+    hasCompleteRecommendationPrescription(recommendation)
+  );
+}
+
+function _getSuggestedWeightValue(
+  recommendation: NonNullable<WorkoutSessionExercise["recommendation"]>,
+  displayUnit: WorkoutSessionExercise["plannedWeightUnit"],
+): string | null {
+  const recommendedWeightLbs = _getRecommendedWeightLbs(recommendation);
+
+  if (recommendedWeightLbs === null) {
+    return null;
+  }
+
+  const displayWeight =
+    displayUnit === "kg"
+      ? poundsToKilograms(recommendedWeightLbs)
+      : recommendedWeightLbs;
+
+  return String(Number(displayWeight.toFixed(2)));
+}
+
+function _getRecommendedWeightLbs(
+  recommendation: NonNullable<WorkoutSessionExercise["recommendation"]>,
+): number | null {
+  return typeof recommendation.recommendedWeightLbs === "number" &&
+    Number.isFinite(recommendation.recommendedWeightLbs)
+    ? recommendation.recommendedWeightLbs
+    : null;
 }

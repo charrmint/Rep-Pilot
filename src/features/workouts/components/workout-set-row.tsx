@@ -1,9 +1,11 @@
 "use client";
 
 import {
+  forwardRef,
   type KeyboardEvent,
   type UIEvent,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   useTransition,
@@ -25,18 +27,28 @@ interface WorkoutSetRowProps {
   onDeleted: (set: WorkoutSet) => void;
 }
 
+interface WorkoutSetRowHandle {
+  applySuggestedWeight: (weightValue: string) => void;
+}
+
 const RIR_OPTIONS: Array<number | null> = [null, 3, 2, 1, 0];
 const RIR_OPTION_HEIGHT_PX = 32;
 
-export function WorkoutSetRow({
-  sessionExerciseId,
-  position,
-  defaultWeightValue,
-  weightUnit,
-  workoutSet,
-  onSaved,
-  onDeleted,
-}: WorkoutSetRowProps) {
+export const WorkoutSetRow = forwardRef<
+  WorkoutSetRowHandle,
+  WorkoutSetRowProps
+>(function WorkoutSetRow(
+  {
+    sessionExerciseId,
+    position,
+    defaultWeightValue,
+    weightUnit,
+    workoutSet,
+    onSaved,
+    onDeleted,
+  },
+  ref,
+) {
   const [weightValue, setWeightValue] = useState(
     String(workoutSet?.weightValue ?? defaultWeightValue),
   );
@@ -47,6 +59,18 @@ export function WorkoutSetRow({
   const rirPickerRef = useRef<HTMLDivElement>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      applySuggestedWeight(nextWeightValue: string) {
+        if (!workoutSet) {
+          setWeightValue(nextWeightValue);
+        }
+      },
+    }),
+    [workoutSet],
+  );
 
   useEffect(() => {
     const initialIndex = RIR_OPTIONS.indexOf(workoutSet?.rir ?? null);
@@ -223,4 +247,4 @@ export function WorkoutSetRow({
       ) : null}
     </li>
   );
-}
+});

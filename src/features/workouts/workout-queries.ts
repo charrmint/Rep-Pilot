@@ -28,6 +28,7 @@ const PREVIOUS_EXERCISE_PERFORMANCE_SELECT = `
   id,
   exercise_id,
   workout_session_id,
+  target_sets,
   workoutSession:workout_sessions!workout_session_exercises_workout_session_id_fkey!inner (
     started_at
   ),
@@ -228,6 +229,12 @@ export async function listPreviousWorkoutSessionExerciseRows({
         .neq("workout_session_id", currentSessionId)
         .eq("workoutSession.status", "completed")
         .eq("sets.kind", "working")
+        .gt("sets.normalized_weight_lbs", 0)
+        .gt("sets.reps", 0)
+        .order("started_at", {
+          ascending: false,
+          referencedTable: "workoutSession",
+        })
         .order("created_at", { ascending: false })
         .order("position", { ascending: true, referencedTable: "sets" })
         .limit(1)
