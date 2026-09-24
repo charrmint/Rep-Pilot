@@ -1,5 +1,7 @@
 "use client";
 
+import { unstable_rethrow } from "next/navigation";
+
 import {
   forwardRef,
   type KeyboardEvent,
@@ -95,7 +97,8 @@ export const WorkoutSetRow = forwardRef<
 
         setErrorMessage(null);
         onSaved(savedSet);
-      } catch {
+      } catch (error) {
+        unstable_rethrow(error);
         setErrorMessage("Set could not be saved. Try again.");
       }
     });
@@ -115,7 +118,8 @@ export const WorkoutSetRow = forwardRef<
 
         setErrorMessage(null);
         onDeleted(workoutSet);
-      } catch {
+      } catch (error) {
+        unstable_rethrow(error);
         setErrorMessage("Set could not be deleted. Try again.");
       }
     });

@@ -73,6 +73,10 @@ NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<supabase-publishable-key>
 
 Apply the migrations in `supabase/migrations` to the target Supabase project. The checked-in Supabase configuration supports local development. Enable Anonymous Sign-Ins in the hosted project's Supabase Auth settings to use demo mode.
 
+Email confirmation and password recovery use a server-side auth callback. See
+[Authentication](docs/authentication.md) for redirect URLs, email delivery setup,
+session behavior, and the recovery smoke-test checklist.
+
 ## Verification
 
 ```bash
