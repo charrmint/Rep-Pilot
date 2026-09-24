@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 
-import { resetPassword, signOut } from "./auth-client-service";
+import { signOut } from "./auth-client-service";
+import { resetPassword } from "./password-recovery-actions";
 import type { ResetPasswordFormProps } from "./types";
 
 export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
@@ -26,6 +27,10 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
     setErrorMessage(null);
     try {
       const result = await resetPassword({ userId, password, confirmation });
+      if (result.error) {
+        setErrorMessage(result.error);
+        return;
+      }
       setPassword("");
       setConfirmation("");
       if (result.signedOut) {
@@ -88,6 +93,10 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
     >
       <p className="break-words text-sm text-gray-600">
         Resetting the password for {email}.
+      </p>
+      <p className="text-sm text-gray-600">
+        Save within 15 minutes of opening your email link. This verification can
+        be used for one password update attempt.
       </p>
       <label className="flex flex-col gap-2 text-sm font-medium text-gray-800">
         New password

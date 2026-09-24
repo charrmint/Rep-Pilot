@@ -1,9 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import {
-  requestPasswordReset,
-  resetPassword,
-  signOut,
-} from "./auth-client-service";
+import { requestPasswordReset, signOut } from "./auth-client-service";
+import { resetPassword } from "./password-recovery-actions";
 import { ForgotPasswordForm } from "./forgot-password-form";
 import { ResetPasswordForm } from "./reset-password-form";
 import { LogoutButton } from "./logout-button";
@@ -12,9 +9,10 @@ const router = vi.hoisted(() => ({ replace: vi.fn(), refresh: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
 vi.mock("./auth-client-service", () => ({
   requestPasswordReset: vi.fn(),
-  resetPassword: vi.fn(),
   signOut: vi.fn(),
 }));
+
+vi.mock("./password-recovery-actions", () => ({ resetPassword: vi.fn() }));
 
 function _fillPasswordForm() {
   fireEvent.change(screen.getByLabelText("New password"), {
@@ -77,9 +75,9 @@ describe("password recovery forms", () => {
   });
 
   it("offers a new email after session expiry without navigating away", async () => {
-    vi.mocked(resetPassword).mockRejectedValue(
-      new Error("Your reset session has expired. Request a new reset email."),
-    );
+    vi.mocked(resetPassword).mockResolvedValue({
+      error: "Your reset session has expired. Request a new reset email.",
+    });
     render(<ResetPasswordForm email="person@example.com" userId="user-id" />);
     _fillPasswordForm();
     expect(await screen.findByRole("alert")).toHaveTextContent("expired");

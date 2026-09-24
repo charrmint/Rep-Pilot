@@ -2,12 +2,12 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { AuthPageShell } from "@/features/auth/auth-page-shell";
-import { getCurrentUser } from "@/features/auth/auth-server-service";
+import { getPasswordRecoveryUser } from "@/features/auth/password-recovery-service";
 import { ResetPasswordForm } from "@/features/auth/reset-password-form";
 
 export default async function ResetPasswordPage() {
   await connection();
-  const user = await getCurrentUser();
+  const user = await getPasswordRecoveryUser();
   if (!user || user.is_anonymous || !user.email) {
     redirect("/forgot-password?error=invalid_link");
   }

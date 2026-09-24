@@ -15,8 +15,21 @@ forwards Supabase's cookie and cache-protection headers.
 - Recovery requests redirect to `/auth/callback?next=/reset-password`. The
   callback exchanges the code and redirects to `/reset-password`. It accepts
   only fixed application destinations and never forwards provider error text.
-- The new-password page requires a verified, non-anonymous user. Submission
-  checks the session again and rejects an account switch since the form loaded.
+- Signed-in users select **Change password**; signed-out users select **Forgot
+  password**. Both request and open a recovery email before choosing a password.
+- The callback, new-password page, and Server Action require a non-anonymous
+  user from `getUser()` and verified `getClaims()` containing a `recovery` AMR
+  entry from the last 15 minutes. A normal session or signup confirmation does
+  not qualify; a query parameter alone cannot authorize recovery. Submission
+  rejects an account switch since the form loaded.
+- Before calling Supabase to update the password, the Server Action atomically
+  consumes the recovery session through `consume_password_recovery()`. Only one
+  concurrent submission succeeds. Refreshing the JWT does not renew recovery
+  authorization or make a consumed session reusable.
+- Password length and confirmation checks happen before consumption. Once the
+  provider update is attempted, even a rejected password or uncertain network
+  outcome requires a new email. This prevents retries from reusing authorization
+  after a password may have changed.
 - After updating the password, the app requests global sign-out and returns to
   sign-in. If sign-out fails, it reports that the password was updated and offers
   a sign-out retry without repeating the password change.
@@ -26,8 +39,29 @@ forwards Supabase's cookie and cache-protection headers.
 The default PKCE flow requires opening the email link in the **same browser and
 device** that requested it. A new request can supersede the previous verifier;
 use the latest email. Custom email-template/token-hash flows for cross-device
-verification are not implemented. Existing authenticated account sessions can
-also access the password form; it is not an additional authentication factor.
+verification are not implemented. Ordinary authenticated sessions cannot access
+RepPilot's password form without recent recovery-email verification.
+
+### Enforcement boundary
+
+These checks protect RepPilot's routes and Server Action. They do **not** change
+Supabase Auth's direct `/auth/v1/user` endpoint: a caller with a session token may
+still update a password there under the provider's own policy. Supabase's secure
+password change setting exempts sessions created within the last 24 hours. This
+implementation does not claim email verification on every provider API request.
+
+### Database prerequisite
+
+Apply `supabase/migrations/20260924120000_consume_password_recovery.sql` before
+releasing this application change. It adds a private, RLS-protected consumption
+table and a restricted RPC that checks the calling JWT's recovery method,
+timestamp, user, and session. No service-role key is used. Consumption rows
+contain no passwords or tokens and are deleted when the account is deleted.
+Without the migration, password updates fail closed.
+
+Run `supabase test db` against a local instance for the database authorization
+checks in `supabase/tests/password_recovery.sql`. Unit tests mock the database;
+they do not establish that a deployed migration or hosted Auth flow works.
 
 ## Supabase configuration
 
@@ -85,13 +119,18 @@ On a local instance or an explicitly approved test environment:
    to sign-in, the old password fails, and the new password succeeds.
 4. Reopen a used link and try an expired link or another browser. Each should
    offer a new reset request without rendering provider errors or credentials.
-5. Open the new-password page without a session and in anonymous demo mode.
-   Both should return to the reset request screen.
-6. Expire/revoke the session while the form is open; verify submission cannot
+5. Open the new-password page without a session, in anonymous demo mode, and
+   after an ordinary password login. All should return to the reset request
+   screen. Relabeling a signup callback with `next=/reset-password` must fail.
+   From a signed-in account, use Change password and follow the new email.
+6. Wait 15 minutes after recovery verification; submission must require a new
+   email, even if the access token has refreshed. Submit twice concurrently;
+   only one provider update should be attempted.
+7. Expire/revoke the session while the form is open; verify submission cannot
    update a password. Switch accounts in another tab and verify the same guard.
-7. Exercise sign-out failure and password-update success followed by sign-out
+8. Exercise sign-out failure and password-update success followed by sign-out
    failure. Recovery must distinguish those outcomes and permit retry.
-8. Confirm session refresh preserves cookies and sends no-store headers. Verify
+9. Confirm session refresh preserves cookies and sends no-store headers. Verify
    protected pages and workout mutations redirect to sign-in after session loss.
 
 References: [Supabase password auth](https://supabase.com/docs/guides/auth/passwords),
