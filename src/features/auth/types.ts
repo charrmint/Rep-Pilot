@@ -17,9 +17,9 @@ export interface PasswordResetInput {
   confirmation: string;
 }
 
-export interface PasswordResetResult {
-  signedOut: boolean;
-}
+export type PasswordResetResult =
+  | { signedOut: boolean; error?: never }
+  | { error: string; signedOut?: never };
 
 export interface AuthPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;

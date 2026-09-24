@@ -47,6 +47,14 @@ export function AppTopBar({ activeSection, userEmail }: AppTopBarProps) {
             );
           })}
         </nav>
+        {userEmail ? (
+          <Link
+            href="/forgot-password"
+            className="px-3 py-2 text-sm font-medium text-gray-700 underline"
+          >
+            Change password
+          </Link>
+        ) : null}
         <LogoutButton />
       </div>
     </div>

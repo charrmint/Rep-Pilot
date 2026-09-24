@@ -1,9 +1,13 @@
 // @vitest-environment node
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPasswordRecoveryUser } from "./password-recovery-service";
 import { handleAuthCallback } from "./auth-callback";
 
 vi.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: vi.fn(),
+}));
+vi.mock("./password-recovery-service", () => ({
+  getPasswordRecoveryUser: vi.fn(),
 }));
 const exchangeCodeForSession = vi.fn();
 
@@ -14,6 +18,9 @@ function _request(query: string) {
 describe("auth callback", () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(getPasswordRecoveryUser).mockResolvedValue({
+      id: "user-id",
+    } as never);
     vi.mocked(createSupabaseServerClient).mockResolvedValue({
       auth: { exchangeCodeForSession },
     } as unknown as Awaited<ReturnType<typeof createSupabaseServerClient>>);
@@ -33,6 +40,16 @@ describe("auth callback", () => {
     );
     expect(response.headers.get("cache-control")).toContain("no-store");
     expect(response.headers.get("referrer-policy")).toBe("no-referrer");
+  });
+
+  it("rejects a normal login code relabeled as recovery", async () => {
+    vi.mocked(getPasswordRecoveryUser).mockResolvedValue(null);
+    const response = await handleAuthCallback(
+      _request("?code=login-code&next=/reset-password"),
+    );
+    expect(response.headers.get("location")).toBe(
+      "https://rep-pilot.example/forgot-password?error=invalid_link",
+    );
   });
 
   it.each([

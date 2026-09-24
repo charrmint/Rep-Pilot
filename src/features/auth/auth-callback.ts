@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getPasswordRecoveryUser } from "./password-recovery-service";
 
 export async function handleAuthCallback(
   request: Request,
@@ -19,7 +20,9 @@ export async function handleAuthCallback(
       const supabase = await createSupabaseServerClient();
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error && data.session && data.user && !data.user.is_anonymous) {
-        destination = isRecovery ? "/reset-password" : "/templates";
+        if (!isRecovery) destination = "/templates";
+        else if (await getPasswordRecoveryUser(supabase))
+          destination = "/reset-password";
       }
     } catch {
       // Never forward provider errors or credentials into a redirect URL.

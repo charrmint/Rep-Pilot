@@ -477,6 +477,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      consume_password_recovery: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
       complete_workout_with_recommendations: {
         Args: {
           p_completed_at: string
