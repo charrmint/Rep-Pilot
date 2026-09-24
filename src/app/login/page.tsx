@@ -2,16 +2,18 @@ import { connection } from "next/server";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/features/auth/auth-server-service";
+import type { AuthPageProps } from "@/features/auth/types";
 import { DemoEntryForm } from "@/features/demo/demo-entry-form";
 
 import { LoginForm } from "./login-form";
 
-export default async function LoginPage() {
+export default async function LoginPage({ searchParams }: AuthPageProps) {
   await connection();
 
   const user = await getCurrentUser();
+  const { error, status } = await searchParams;
 
-  if (user) {
+  if (user && !user.is_anonymous && error !== "invalid_link") {
     redirect("/templates");
   }
 
@@ -47,6 +49,25 @@ export default async function LoginPage() {
           <span className="h-px flex-1 bg-gray-200" />
         </div>
 
+        {error === "invalid_link" ? (
+          <p
+            role="alert"
+            className="rounded-md bg-amber-50 p-3 text-sm text-amber-900"
+          >
+            This confirmation link is expired, already used, or couldn’t be
+            verified. Try signing in if you already confirmed your email.
+            Otherwise, create your account again to request a new confirmation
+            and open the latest link in the same browser and device.
+          </p>
+        ) : null}
+        {status === "password_reset" ? (
+          <p
+            role="status"
+            className="rounded-md bg-green-50 p-3 text-sm text-green-800"
+          >
+            Password updated. Sign in with your new password.
+          </p>
+        ) : null}
         <LoginForm />
       </section>
     </main>

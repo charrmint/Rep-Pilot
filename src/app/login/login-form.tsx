@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { type FormEvent, useState } from "react";
 
 import {
@@ -8,7 +9,7 @@ import {
   signUpWithPassword,
 } from "@/features/auth/auth-client-service";
 
-type AuthMode = "sign_in" | "sign_up";
+import type { AuthMode } from "@/features/auth/types";
 
 export function LoginForm() {
   const router = useRouter();
@@ -19,7 +20,7 @@ export function LoginForm() {
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function _handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setErrorMessage(null);
     setStatusMessage(null);
@@ -58,12 +59,14 @@ export function LoginForm() {
 
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={_handleSubmit}
       className="flex w-full flex-col gap-4 rounded-md border border-gray-200 bg-white p-5 shadow-sm"
     >
       <div className="grid grid-cols-2 rounded-md bg-gray-100 p-1 text-sm font-medium">
         <button
           type="button"
+          disabled={isSubmitting}
+          aria-pressed={isSignIn}
           onClick={() => setMode("sign_in")}
           className={`rounded px-3 py-2 transition ${
             isSignIn ? "bg-white text-gray-950 shadow-sm" : "text-gray-600"
@@ -73,12 +76,14 @@ export function LoginForm() {
         </button>
         <button
           type="button"
+          disabled={isSubmitting}
+          aria-pressed={!isSignIn}
           onClick={() => setMode("sign_up")}
           className={`rounded px-3 py-2 transition ${
             !isSignIn ? "bg-white text-gray-950 shadow-sm" : "text-gray-600"
           }`}
         >
-          Create
+          Create account
         </button>
       </div>
 
@@ -108,13 +113,19 @@ export function LoginForm() {
       </label>
 
       {errorMessage ? (
-        <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p
+          role="alert"
+          className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700"
+        >
           {errorMessage}
         </p>
       ) : null}
 
       {statusMessage ? (
-        <p className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+        <p
+          role="status"
+          className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700"
+        >
           {statusMessage}
         </p>
       ) : null}
@@ -124,12 +135,16 @@ export function LoginForm() {
         disabled={isSubmitting}
         className="rounded-md bg-gray-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isSubmitting
-          ? "Working..."
-          : isSignIn
-            ? "Sign in"
-            : "Create account"}
+        {isSubmitting ? "Working..." : isSignIn ? "Sign in" : "Create account"}
       </button>
+      {isSignIn ? (
+        <Link
+          href="/forgot-password"
+          className="min-h-11 py-3 text-center text-sm font-semibold text-gray-700 underline"
+        >
+          Forgot password?
+        </Link>
+      ) : null}
     </form>
   );
 }

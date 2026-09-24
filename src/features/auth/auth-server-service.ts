@@ -2,17 +2,19 @@ import type { AuthUser } from "@supabase/supabase-js";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+import { isMissingAuthSession } from "./auth-errors";
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const supabase = await createSupabaseServerClient();
 
   const { data, error } = await supabase.auth.getUser();
 
   if (error) {
-    if (error.name === "AuthSessionMissingError") {
+    if (isMissingAuthSession(error)) {
       return null;
     }
 
-    throw new Error(`Failed to get current user: ${error.message}`);
+    throw new Error("Unable to check your session. Please try again.");
   }
 
   return data.user;
