@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useState } from "react";
 import type { LibraryBrowserProps } from "../types";
 import { Button, ButtonLink, Card, Input } from "../ui/primitives";
+import { StartWorkout } from "../workouts/start-workout";
 import { Icon } from "../ui/icon";
 
 export function LibraryBrowser({
   view,
   plans,
   exercises,
+  activeWorkout = null,
 }: LibraryBrowserProps) {
   const [query, setQuery] = useState("");
   const [archived, setArchived] = useState(false);
@@ -138,6 +140,13 @@ export function LibraryBrowser({
                     </p>
                   )}
                 </details>
+                {!archived && (
+                  <StartWorkout
+                    templateId={plan.id}
+                    hasExercises={plan.exercises.length > 0}
+                    activeWorkout={activeWorkout}
+                  />
+                )}
                 <div className="v2-card-actions">
                   <ButtonLink
                     variant="secondary"

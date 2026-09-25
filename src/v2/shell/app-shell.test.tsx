@@ -41,6 +41,6 @@ describe("V2 navigation", () => {
     );
     expect(
       screen.getByRole("link", { name: /Resume workout/ }),
-    ).toHaveAttribute("href", "/workouts/session-1");
+    ).toHaveAttribute("href", "/v2/workouts/session-1");
   });
 });
