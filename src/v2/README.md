@@ -102,9 +102,16 @@ v2 navigation and invalidate the related classic workout/history views.
 
 ## Screen composition for subsequent work
 
-- **Today:** resume/start hero, quick-start plans, then contextual progression and
-  last-session cards. Empty accounts should lead to plan creation. Never substitute
-  sample metrics for missing data.
+- **Today:** the active session leads with elapsed time and saved planned-set
+  progress; extra sets do not fill missing planned positions. Up to two active
+  plans with exercises appear in recently-updated order, with ID breaking ties.
+  Empty accounts lead to classic plan creation; incomplete and archived plans
+  lead to Library. Plans and progress stream independently so a slow or failed
+  optional read does not remove Resume. Failed active-workout reads preserve
+  account access but disable starts in Today and Library until a refresh succeeds.
+  Set mutations invalidate Today; lifecycle mutations refresh v2 navigation.
+  Contextual progression and last-session cards remain future additions. Never
+  substitute sample metrics for missing data.
 - **Plan editor:** name and primary save action, ordered exercise cards, exercise
   picker, then archive management. Each exercise card groups sets, rep range,
   load/unit, and increment. Keep reorder/remove actions near their exercise.

@@ -4,12 +4,13 @@ import { AppShell } from "@/v2/shell/app-shell";
 import "@/v2/styles.css";
 
 export default async function V2Layout({ children }: { children: ReactNode }) {
-  const { user, activeWorkout } = await getV2Context();
+  const { user, activeWorkout, activeWorkoutUnavailable } = await getV2Context();
   return (
     <AppShell
       email={user?.email ?? null}
       signedIn={Boolean(user)}
       activeWorkout={activeWorkout}
+      activeWorkoutUnavailable={activeWorkoutUnavailable}
     >
       {children}
     </AppShell>

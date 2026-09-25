@@ -12,6 +12,7 @@ export function LibraryBrowser({
   plans,
   exercises,
   activeWorkout = null,
+  activeWorkoutUnavailable = false,
 }: LibraryBrowserProps) {
   const [query, setQuery] = useState("");
   const [archived, setArchived] = useState(false);
@@ -145,6 +146,7 @@ export function LibraryBrowser({
                     templateId={plan.id}
                     hasExercises={plan.exercises.length > 0}
                     activeWorkout={activeWorkout}
+                    activeWorkoutUnavailable={activeWorkoutUnavailable}
                   />
                 )}
                 <div className="v2-card-actions">

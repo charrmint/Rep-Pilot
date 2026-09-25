@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { AppShellProps, NavigationItem } from "../types";
 import { Icon } from "../ui/icon";
+import { RetryButton } from "../ui/retry-button";
 import { ButtonLink } from "../ui/primitives";
 
 const NAVIGATION: NavigationItem[] = [
@@ -18,6 +19,7 @@ export function AppShell({
   email,
   signedIn,
   activeWorkout,
+  activeWorkoutUnavailable = false,
 }: AppShellProps) {
   const pathname = usePathname();
   const focused = pathname.startsWith("/v2/workouts/");
@@ -98,6 +100,18 @@ export function AppShell({
           </Link>
         </header>
         <main id="v2-content" tabIndex={-1} className="v2-content">
+          {activeWorkoutUnavailable && pathname !== "/v2" && (
+            <section
+              className="v2-card v2-workout-status-error"
+              aria-label="Workout status"
+            >
+              <p role="alert">
+                Your active workout status couldn’t load. Starting a workout is
+                unavailable until we can check it.
+              </p>
+              <RetryButton />
+            </section>
+          )}
           {children}
         </main>
       </div>

@@ -48,3 +48,15 @@ it("prevents a blind retry after an uncertain start failure", async () => {
   );
   await waitFor(() => expect(screen.getByRole("button", { name: "Start workout" })).toBeDisabled());
 });
+
+
+it("disables an already-open replacement confirmation when status becomes unavailable", () => {
+  const props = { templateId: "plan", hasExercises: true, activeWorkout: { id: "active", templateName: "Upper", startedAt: "2026-09-24" } };
+  const { rerender } = render(<StartWorkout {...props} />);
+  fireEvent.click(screen.getByRole("button", { name: "Start workout" }));
+  rerender(<StartWorkout {...props} activeWorkoutUnavailable />);
+  const button = screen.getByRole("button", { name: "Abandon and start" });
+  expect(button).toBeDisabled();
+  fireEvent.click(button);
+  expect(startV2Workout).not.toHaveBeenCalled();
+});

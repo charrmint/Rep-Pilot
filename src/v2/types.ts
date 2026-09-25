@@ -27,6 +27,7 @@ export interface AppShellProps {
   email: string | null;
   signedIn: boolean;
   activeWorkout: ActiveWorkoutSummary | null;
+  activeWorkoutUnavailable?: boolean;
 }
 export interface PageHeaderProps {
   eyebrow: string;
@@ -54,4 +55,5 @@ export interface LibraryBrowserProps {
   plans?: WorkoutTemplateLibrary;
   exercises?: ExerciseLibrary;
   activeWorkout?: ActiveWorkoutSummary | null;
+  activeWorkoutUnavailable?: boolean;
 }

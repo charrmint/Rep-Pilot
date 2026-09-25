@@ -24,6 +24,7 @@ export async function startWorkoutAction(
 ): Promise<never> {
   await _getRequiredUserId();
   const sessionId = await startWorkout(input);
+  revalidatePath("/v2", "layout");
 
   revalidatePath("/templates");
   redirect(`/workouts/${sessionId}`);
@@ -34,6 +35,7 @@ export async function saveWorkoutSetAction(
 ): Promise<WorkoutSet> {
   const userId = await _getRequiredUserId();
   const set = await saveWorkoutSet({ userId, input });
+  revalidatePath("/v2");
 
   return set;
 }
@@ -44,12 +46,14 @@ export async function deleteWorkoutSetAction(
   const userId = await _getRequiredUserId();
 
   await deleteWorkoutSet({ userId, input });
+  revalidatePath("/v2");
 }
 
 export async function finishWorkoutAction(sessionId: string): Promise<never> {
   const userId = await _getRequiredUserId();
 
   await finishWorkout({ userId, sessionId });
+  revalidatePath("/v2", "layout");
   revalidatePath(`/workouts/${sessionId}`);
   revalidatePath("/templates");
   redirect(`/workouts/${sessionId}`);
@@ -59,6 +63,7 @@ export async function cancelWorkoutAction(sessionId: string): Promise<never> {
   const userId = await _getRequiredUserId();
 
   await cancelWorkout({ userId, sessionId });
+  revalidatePath("/v2", "layout");
   revalidatePath("/templates");
   redirect("/templates");
 }

@@ -17,6 +17,7 @@ export interface StartWorkoutProps {
   templateId: string;
   hasExercises: boolean;
   activeWorkout: ActiveWorkoutSummary | null;
+  activeWorkoutUnavailable?: boolean;
 }
 export interface WorkoutScreenProps {
   initialWorkout: WorkoutSession;

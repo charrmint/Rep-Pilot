@@ -3,7 +3,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { AppShell } from "./app-shell";
 
 const location = vi.hoisted(() => ({ pathname: "/v2/library/exercises" }));
-vi.mock("next/navigation", () => ({ usePathname: () => location.pathname }));
+vi.mock("next/navigation", () => ({
+  usePathname: () => location.pathname,
+  useRouter: () => ({ refresh: vi.fn() }),
+}));
 afterEach(cleanup);
 
 describe("V2 navigation", () => {
@@ -43,4 +46,19 @@ describe("V2 navigation", () => {
       screen.getByRole("link", { name: /Resume workout/ }),
     ).toHaveAttribute("href", "/v2/workouts/session-1");
   });
+});
+
+
+it("keeps Profile and navigation available when workout status cannot load", () => {
+  location.pathname = "/v2/profile";
+  render(
+    <AppShell email="owner@example.com" signedIn activeWorkout={null} activeWorkoutUnavailable>
+      <h1>Your account</h1>
+    </AppShell>,
+  );
+  expect(screen.getByRole("heading", { name: "Your account" })).toBeInTheDocument();
+  expect(screen.getByRole("alert")).toHaveTextContent("active workout status couldn’t load");
+  expect(screen.getByRole("button", { name: "Try again" })).toBeEnabled();
+  expect(screen.queryByRole("link", { name: "Resume workout" })).not.toBeInTheDocument();
+  location.pathname = "/v2/library/exercises";
 });
