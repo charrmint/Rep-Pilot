@@ -922,3 +922,105 @@
   border-color: var(--v2-brand);
   color: var(--v2-brand-strong);
 }
+
+.v2-workout-dialog {
+  width: min(480px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  margin: auto;
+  padding: 24px;
+  border: 1px solid var(--v2-control-line);
+  border-radius: var(--v2-radius-lg);
+  background: var(--v2-surface);
+  color: var(--v2-text);
+  box-shadow: 0 18px 60px #0008;
+}
+.v2-workout-dialog::backdrop {
+  background: #000b;
+  backdrop-filter: blur(4px);
+}
+.v2-workout-dialog > p,
+.v2-workout-dialog > label,
+.v2-workout-dialog > div {
+  margin-top: 18px;
+}
+.v2-workout-dialog > p {
+  color: var(--v2-muted);
+}
+.v2-workout-dialog .v2-confirm-note {
+  color: var(--v2-brand-strong);
+}
+.v2-discard-drafts {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--v2-line);
+  border-radius: var(--v2-radius-sm);
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+.v2-discard-drafts input {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  accent-color: var(--v2-brand);
+}
+.v2-workout-dialog .v2-actions > button {
+  flex: 1 1 160px;
+}
+.v2-workout-results {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 24px;
+  padding-top: 24px;
+}
+.v2-workout-results > .v2-button {
+  align-self: flex-start;
+}
+.v2-workout-results h1 {
+  outline: none;
+}
+.v2-result-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin: 0;
+}
+.v2-result-metrics dt {
+  color: var(--v2-muted);
+  font-size: 0.8rem;
+}
+.v2-result-metrics dd {
+  font-size: 1.4rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  margin: 4px 0 0;
+}
+.v2-result-exercise > h2 {
+  margin-bottom: 10px;
+}
+.v2-result-exercise > .v2-muted {
+  margin-top: 12px;
+}
+/* Reuse the shared result components with the v2 presentation. */
+.v2-result-insights > section {
+  background: var(--v2-raised);
+  border-color: var(--v2-line);
+  border-radius: var(--v2-radius-md);
+}
+.v2-result-insights :is(p, h3, dt, dd) {
+  color: var(--v2-text);
+}
+.v2-result-insights section > :first-child {
+  color: var(--v2-brand-strong);
+}
+.v2-result-insights dl > div {
+  background: var(--v2-surface);
+  border-radius: var(--v2-radius-sm);
+}
+.v2-result-insights dd:last-child {
+  color: var(--v2-muted);
+}

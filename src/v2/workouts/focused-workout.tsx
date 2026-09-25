@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { unstable_rethrow } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import type {
   WorkoutSessionExercise,
   WorkoutSet,
@@ -12,19 +12,29 @@ import {
 } from "@/features/workouts/workout-actions";
 import { validateWorkoutSetInput } from "@/features/workouts/workout-validation";
 import { Button, ButtonLink, Card } from "../ui/primitives";
-import type { ExerciseDrafts, SetDraft, WorkoutScreenProps } from "./types";
+import type {
+  ExerciseDrafts,
+  SetDraft,
+  WorkoutScreenProps,
+  WorkoutEndIntent,
+} from "./types";
 import {
   createDraft,
   nextPlannedPosition,
   plannedSetCount,
 } from "./editor-state";
-import { reloadV2Workout } from "./actions";
+import { reloadV2Workout, endV2Workout } from "./actions";
 import { SetEditor } from "./set-editor";
 import { ExerciseContext } from "./exercise-context";
 import { ElapsedTime } from "./elapsed-time";
 import { useLeaveWarning } from "./use-leave-warning";
+import { isValidStrengthSet } from "@/lib/metrics/strength";
+import { WorkoutConfirmation } from "./workout-confirmation";
+import { WorkoutResults } from "./workout-results";
 
 export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
+  const router = useRouter();
+  const [intent, setIntent] = useState<WorkoutEndIntent | null>(null);
   const [workout, setWorkout] = useState(initialWorkout);
   const [exerciseId, setExerciseId] = useState(
     (
@@ -70,6 +80,59 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
     0,
   );
 
+  const canFinish = workout.exercises.some((item) =>
+    item.sets.some((set) =>
+      isValidStrengthSet({ weight: set.normalizedWeightLbs, reps: set.reps }),
+    ),
+  );
+
+  function _openConfirmation(value: WorkoutEndIntent) {
+    if (pending || unverified || lock.current) return;
+    setError(null);
+    setIntent(value);
+  }
+  async function _endWorkout() {
+    if (
+      !intent ||
+      lock.current ||
+      unverified ||
+      (intent === "finish" && !canFinish)
+    )
+      return;
+    lock.current = true;
+    setPending(true);
+    setError(null);
+    try {
+      const result = await endV2Workout(workout.id, intent);
+      setWorkout(result);
+      setDrafts({});
+      setIntent(null);
+      router.refresh();
+    } catch (error) {
+      unstable_rethrow(error);
+      await _recover();
+    } finally {
+      lock.current = false;
+      setPending(false);
+    }
+  }
+  const confirmation = intent ? (
+    <WorkoutConfirmation
+      key={intent}
+      intent={intent}
+      logged={logged}
+      remaining={Math.max(0, planned - completed)}
+      hasDrafts={dirty}
+      canFinish={canFinish}
+      pending={pending}
+      unverified={unverified}
+      error={error}
+      onConfirm={_endWorkout}
+      onDismiss={() => setIntent(null)}
+      onCheck={_checkSaved}
+    />
+  ) : null;
+
   function _selectExercise(id: string) {
     setExerciseId(id);
     setDeleteId(null);
@@ -111,13 +174,20 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
     const latest = await reloadV2Workout(workout.id);
     setWorkout(latest);
     setUnverified(false);
+    if (latest.status !== "in_progress") {
+      setDrafts({});
+      setIntent(null);
+      router.refresh();
+    }
     return latest;
   }
   async function _recover() {
     try {
       await _reconcile();
       setError(
-        "The request could not be confirmed. Saved sets have been refreshed; review them before retrying. Your input is kept.",
+        intent
+          ? "The workout could not be ended. Its status has been checked; review your logged sets and try again. Your input is kept."
+          : "The request could not be confirmed. Saved sets have been refreshed; review them before retrying. Your input is kept.",
       );
     } catch (error) {
       unstable_rethrow(error);
@@ -235,30 +305,29 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
   }
 
   if (workout.status !== "in_progress")
-    return (
-      <Card className="v2-empty">
-        <h1>
-          {workout.status === "completed"
-            ? "Workout complete"
-            : "Workout abandoned"}
-        </h1>
-        <p>This session is read-only. Your logged sets are saved.</p>
-        <ButtonLink href={`/workouts/${workout.id}`}>
-          View workout results
-        </ButtonLink>
-        <ButtonLink variant="secondary" href="/v2">
-          Back to Today
-        </ButtonLink>
-      </Card>
-    );
+    return <WorkoutResults workout={workout} />;
   if (!exercise)
     return (
-      <Card className="v2-empty">
-        <h1>No exercises in this workout</h1>
-        <ButtonLink href={`/workouts/${workout.id}`}>
-          Open workout options
-        </ButtonLink>
-      </Card>
+      <>
+        <Card className="v2-empty">
+          <h1>No exercises in this workout</h1>
+          <Button
+            variant="secondary"
+            disabled={pending || unverified}
+            onClick={() => _openConfirmation("abandon")}
+          >
+            Abandon workout
+          </Button>
+          {error && <p role="alert">{error}</p>}
+          {unverified && (
+            <Button disabled={pending} onClick={_checkSaved}>
+              Check saved sets
+            </Button>
+          )}
+          <ButtonLink href="/v2">Back to Today</ButtonLink>
+        </Card>
+        {confirmation}
+      </>
     );
   const nextExercise =
     workout.exercises[workout.exercises.indexOf(exercise) + 1];
@@ -272,9 +341,13 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           <strong>{workout.templateName}</strong>
           <ElapsedTime startedAt={workout.startedAt} />
         </div>
-        <ButtonLink variant="quiet" href={`/workouts/${workout.id}`}>
-          Options
-        </ButtonLink>
+        <Button
+          variant="quiet"
+          disabled={pending || unverified}
+          onClick={() => _openConfirmation("abandon")}
+        >
+          Abandon
+        </Button>
       </header>
       <nav className="v2-exercise-tabs" aria-label="Workout exercises">
         {workout.exercises.map((item) => (
@@ -462,10 +535,15 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
             {dirty ? "Unlogged changes" : "Logged sets saved"}
           </span>
         </div>
-        <ButtonLink variant="secondary" href={`/workouts/${workout.id}`}>
-          Finish / abandon
-        </ButtonLink>
+        <Button
+          variant="secondary"
+          disabled={pending || unverified}
+          onClick={() => _openConfirmation("finish")}
+        >
+          Finish workout
+        </Button>
       </footer>
+      {confirmation}
     </div>
   );
 }
