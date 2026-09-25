@@ -20,6 +20,7 @@ export function AppShell({
   activeWorkout,
 }: AppShellProps) {
   const pathname = usePathname();
+  const focused = pathname.startsWith("/v2/workouts/");
   const accountLabel =
     email || (signedIn ? "Demo account" : "Welcome to RepPilot");
 
@@ -50,7 +51,7 @@ export function AppShell({
   }
 
   return (
-    <div className="v2-root">
+    <div className={`v2-root${focused ? " v2-root--workout" : ""}`}>
       <a className="v2-skip-link" href="#v2-content">
         Skip to content
       </a>
@@ -63,7 +64,7 @@ export function AppShell({
           <section className="v2-rail-workout">
             <p className="v2-eyebrow">Workout in progress</p>
             <h2>{activeWorkout.templateName}</h2>
-            <ButtonLink href={`/workouts/${activeWorkout.id}`}>
+            <ButtonLink href={`/v2/workouts/${activeWorkout.id}`}>
               Resume workout <Icon name="arrow" />
             </ButtonLink>
           </section>
