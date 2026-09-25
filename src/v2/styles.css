@@ -1024,3 +1024,39 @@
 .v2-result-insights dd:last-child {
   color: var(--v2-muted);
 }
+
+
+/* Today: the active session leads, with compact plan choices below. */
+.v2-today-progress { margin: 12px 0 24px; }
+.v2-today-progress p { margin: 0 0 10px; }
+.v2-today-progress progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--v2-soft);
+  accent-color: var(--v2-success);
+}
+.v2-today-progress progress::-webkit-progress-bar { background: var(--v2-soft); }
+.v2-today-progress progress::-webkit-progress-value { background: var(--v2-success); border-radius: 999px; }
+.v2-today-progress progress::-moz-progress-bar { background: var(--v2-success); border-radius: 999px; }
+.v2-quick-start-note { margin-bottom: 12px; font-size: 0.875rem; }
+.v2-quick-start-list { display: grid; gap: 12px; padding: 0; margin: 0; list-style: none; }
+.v2-quick-start-plan { display: grid; gap: 18px; }
+.v2-quick-start-heading { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.v2-quick-start-heading > div { min-width: 0; }
+.v2-quick-start-heading .v2-tile-icon { flex-shrink: 0; }
+.v2-quick-start-heading h3, .v2-hero h2 { overflow-wrap: anywhere; }
+.v2-quick-start-heading p { margin-top: 4px; font-size: 0.875rem; }
+.v2-quick-start-plan .v2-start-control { margin-top: 0; }
+.v2-today-links { margin-top: 24px; }
+.v2-hero .v2-classic-note { margin: 16px 0 0; font-size: 0.875rem; }
+.v2-workout-status-error { margin-bottom: 24px; }
+.v2-workout-status-error p { margin-bottom: 12px; }
+@media (min-width: 640px) {
+  .v2-quick-start-plan { grid-template-columns: minmax(0, 1fr) minmax(160px, auto); align-items: center; }
+  .v2-quick-start-plan .v2-start-control { max-width: 320px; }
+}
