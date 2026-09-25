@@ -53,4 +53,5 @@ export interface LibraryBrowserProps {
   view: LibraryView;
   plans?: WorkoutTemplateLibrary;
   exercises?: ExerciseLibrary;
+  activeWorkout?: ActiveWorkoutSummary | null;
 }

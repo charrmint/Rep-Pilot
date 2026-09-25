@@ -27,7 +27,7 @@ export async function TodayScreen() {
           </p>
           <ButtonLink
             href={
-              activeWorkout ? `/workouts/${activeWorkout.id}` : "/templates"
+              activeWorkout ? `/v2/workouts/${activeWorkout.id}` : "/v2/library"
             }
           >
             {activeWorkout ? "Resume workout" : "Choose a workout"}

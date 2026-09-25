@@ -1,8 +1,10 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExerciseLibrary } from "@/features/exercises/types";
 import type { WorkoutTemplateLibrary } from "@/features/templates/types";
 import { LibraryBrowser } from "./library-browser";
+
+vi.mock("../workouts/actions", () => ({ startV2Workout: vi.fn() }));
 
 afterEach(cleanup);
 
