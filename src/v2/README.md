@@ -24,10 +24,10 @@ Client modules receive presentation data, never a database client or credential.
 | `/v2/library/exercises`    | Search active/archived exercises and open history        |
 | `/v2/history`              | Entry points to session, plan, and exercise history      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
-| `/v2/workouts/[sessionId]` | Focused exercise navigation and set logging              |
+| `/v2/workouts/[sessionId]` | Workout logging, completion, and read-only results       |
 
 The library uses live account data. Plan creation/editing, archive management,
-exercise management, workout completion, and detailed history currently open the
+exercise management and history browsing currently open the
 existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
@@ -71,18 +71,40 @@ Weight steppers use the session's configured increment and existing unit helpers
 RIR uses 0, 1, 2, 3+, and Skip buttons, defaulting to Skip. The 3+ option
 stores 3, matching the existing top option; Skip stores null. Existing saved
 values above 3 are preserved unless the effort selection is changed. Suggestions apply only to the
-current unsaved weight, preserving reps and RIR. Finished/abandoned sessions show
-a read-only entry point to existing results. Finish/abandon controls open the
-existing workout screen until the v2 completion flow is available.
+current unsaved weight, preserving reps and RIR. Finished and abandoned sessions show
+read-only results on the same v2 workout URL.
+
+## Completion and results
+
+Finish and Abandon open native modal dialogs with keyboard focus containment.
+Finishing a partial workout shows the remaining planned-set count. Any dirty
+exercise draft requires explicit acknowledgement before discarding it; dismissing
+the dialog keeps the draft. Set mutations and lifecycle mutations share the same
+pending lock, preventing completion while a set is still being saved.
+
+Completion calls the existing `finishWorkout` service, including its atomic
+persistence of recommendations and strength records. The UI uses the existing
+strength-set validator to explain why a session needs at least one set with
+positive weight and reps. Abandonment calls `cancelWorkout` and retains logged
+sets without generating completion products.
+
+Results load persisted sets, recommendations, and records. Shared recommendation
+and record components keep explanations and units consistent with the classic
+app, with scoped v2 presentation overrides. Duration uses the existing workout
+history helper; abandoned sessions omit duration because no end timestamp is
+stored. An empty or skipped exercise is shown explicitly.
+
+After an uncertain lifecycle response, the screen reloads server state. A closed
+session displays its actual results; an active session retains drafts and offers
+a retry. If status cannot be checked, further mutations remain blocked until
+recovery succeeds. Successful completion and recovery of closed sessions refresh
+v2 navigation and invalidate the related classic workout/history views.
 
 ## Screen composition for subsequent work
 
 - **Today:** resume/start hero, quick-start plans, then contextual progression and
   last-session cards. Empty accounts should lead to plan creation. Never substitute
   sample metrics for missing data.
-- **Workout completion:** replace the existing-screen handoff with v2 finish and
-  abandon confirmations, followed by read-only results and persisted records and
-  recommendations. Preserve existing completion rules.
 - **Plan editor:** name and primary save action, ordered exercise cards, exercise
   picker, then archive management. Each exercise card groups sets, rep range,
   load/unit, and increment. Keep reorder/remove actions near their exercise.
