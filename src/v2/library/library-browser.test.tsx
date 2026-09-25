@@ -121,3 +121,9 @@ describe("V2 library", () => {
     );
   });
 });
+
+
+it("disables library starts when the shared workout status is unavailable", () => {
+  render(<LibraryBrowser view="plans" plans={plans} activeWorkoutUnavailable />);
+  expect(screen.getByRole("button", { name: "Workout status unavailable" })).toBeDisabled();
+});

@@ -9,7 +9,7 @@ import { SignInCard } from "../ui/sign-in-card";
 import { LibraryBrowser } from "./library-browser";
 
 export async function LibraryScreen({ view }: { view: LibraryView }) {
-  const { user, activeWorkout } = await getV2Context();
+  const { user, activeWorkout, activeWorkoutUnavailable } = await getV2Context();
   const plans =
     user && view === "plans"
       ? await listWorkoutTemplateLibrary(user.id)
@@ -52,6 +52,7 @@ export async function LibraryScreen({ view }: { view: LibraryView }) {
           plans={plans}
           exercises={exercises}
           activeWorkout={activeWorkout}
+          activeWorkoutUnavailable={activeWorkoutUnavailable}
         />
       ) : (
         <SignInCard />

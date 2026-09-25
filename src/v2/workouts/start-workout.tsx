@@ -10,13 +10,14 @@ export function StartWorkout({
   templateId,
   hasExercises,
   activeWorkout,
+  activeWorkoutUnavailable = false,
 }: StartWorkoutProps) {
   const [confirming, setConfirming] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const lock = useRef(false);
   function _start() {
-    if (lock.current) return;
+    if (lock.current || activeWorkoutUnavailable) return;
     lock.current = true;
     setError(null);
     startTransition(async () => {
@@ -44,7 +45,10 @@ export function StartWorkout({
             sets will be kept.
           </p>
           <div className="v2-actions">
-            <Button disabled={pending || Boolean(error)} onClick={_start}>
+            <Button
+              disabled={pending || Boolean(error) || activeWorkoutUnavailable}
+              onClick={_start}
+            >
               {pending ? "Starting…" : "Abandon and start"}
             </Button>
             <ButtonLink
@@ -64,14 +68,18 @@ export function StartWorkout({
         </>
       ) : (
         <Button
-          disabled={!hasExercises || pending || Boolean(error)}
+          disabled={
+            !hasExercises || pending || Boolean(error) || activeWorkoutUnavailable
+          }
           onClick={() => (activeWorkout ? setConfirming(true) : _start())}
         >
-          {!hasExercises
-            ? "Add exercises first"
-            : pending
-              ? "Starting…"
-              : "Start workout"}
+          {activeWorkoutUnavailable
+            ? "Workout status unavailable"
+            : !hasExercises
+              ? "Add exercises first"
+              : pending
+                ? "Starting…"
+                : "Start workout"}
         </Button>
       )}
       {error && (
