@@ -17,15 +17,22 @@ import {
   saveWorkoutSetAction,
   deleteWorkoutSetAction,
 } from "@/features/workouts/workout-actions";
-import { reloadV2Workout } from "./actions";
+import { reloadV2Workout, endV2Workout } from "./actions";
 import { FocusedWorkout } from "./focused-workout";
 
 vi.mock("@/features/workouts/workout-actions", () => ({
   saveWorkoutSetAction: vi.fn(),
   deleteWorkoutSetAction: vi.fn(),
 }));
-vi.mock("./actions", () => ({ reloadV2Workout: vi.fn() }));
-vi.mock("next/navigation", () => ({ unstable_rethrow: vi.fn() }));
+vi.mock("./actions", () => ({
+  reloadV2Workout: vi.fn(),
+  endV2Workout: vi.fn(),
+}));
+const refresh = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({
+  unstable_rethrow: vi.fn(),
+  useRouter: () => ({ refresh }),
+}));
 
 const exercise: WorkoutSessionExercise = {
   id: "session-bench",
@@ -96,35 +103,195 @@ function _switch(name: string) {
   );
 }
 
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => {
+  vi.resetAllMocks();
+  HTMLDialogElement.prototype.showModal = function () {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.open = false;
+  };
+});
 afterEach(cleanup);
 
 describe("Focused workout", () => {
+  it("requires acknowledgement before discarding drafts and finishing a partial session", async () => {
+    const data = _render([savedSet]);
+    _reps("9");
+    _switch("Cable Row");
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    const dialog = screen.getByRole("dialog", { name: "Finish this workout?" });
+    expect(
+      within(dialog).getByText(/3 planned sets are still unlogged/),
+    ).toBeInTheDocument();
+    const confirm = within(dialog).getByRole("button", {
+      name: "Confirm finish",
+    });
+    expect(confirm).toBeDisabled();
+    fireEvent.click(within(dialog).getByRole("checkbox"));
+    vi.mocked(endV2Workout).mockResolvedValue({
+      ...data,
+      status: "completed",
+      completedAt: "2026-09-24T13:00:00Z",
+    });
+    fireEvent.click(confirm);
+    await screen.findByRole("heading", { name: "Workout complete" });
+    expect(endV2Workout).toHaveBeenCalledWith("workout", "finish");
+    expect(saveWorkoutSetAction).not.toHaveBeenCalled();
+    expect(screen.getByText("100 lb × 8")).toBeInTheDocument();
+    expect(screen.queryByRole("spinbutton")).not.toBeInTheDocument();
+    expect(refresh).toHaveBeenCalled();
+  });
+
+  it("keeps drafts when the user cancels completion", () => {
+    _render([savedSet]);
+    _reps("9");
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Keep working out" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(9);
+    expect(endV2Workout).not.toHaveBeenCalled();
+  });
+
+  it("explains why zero-weight sets cannot finish but allows abandonment", async () => {
+    const data = _render([
+      { ...savedSet, weightValue: 0, normalizedWeightLbs: 0 },
+    ]);
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    expect(
+      screen.getByRole("button", { name: "Confirm finish" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(/Log at least one set with positive weight/),
+    ).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Keep working out" }));
+    fireEvent.click(screen.getByRole("button", { name: "Abandon" }));
+    vi.mocked(endV2Workout).mockResolvedValue({ ...data, status: "cancelled" });
+    fireEvent.click(screen.getByRole("button", { name: "Confirm abandon" }));
+    await screen.findByRole("heading", { name: "Workout abandoned" });
+    expect(endV2Workout).toHaveBeenCalledWith("workout", "abandon");
+    expect(screen.getByText("0 lb × 8")).toBeInTheDocument();
+    expect(screen.queryByText("Duration")).not.toBeInTheDocument();
+  });
+
+  it("blocks ending while a save is pending", async () => {
+    let resolve!: (set: WorkoutSet) => void;
+    vi.mocked(saveWorkoutSetAction).mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    _render();
+    _reps("8");
+    fireEvent.click(screen.getByRole("button", { name: "Log set" }));
+    expect(
+      screen.getByRole("button", { name: "Finish workout" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Abandon" })).toBeDisabled();
+    await act(async () => resolve(savedSet));
+    expect(endV2Workout).not.toHaveBeenCalled();
+  });
+
+  it("blocks duplicate finishes and closing the dialog during completion", async () => {
+    const data = _render([savedSet]);
+    let resolve!: (value: WorkoutSession) => void;
+    vi.mocked(endV2Workout).mockReturnValue(
+      new Promise((done) => {
+        resolve = done;
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    const confirm = screen.getByRole("button", { name: "Confirm finish" });
+    fireEvent.click(confirm);
+    fireEvent.click(confirm);
+    expect(endV2Workout).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole("button", { name: "Keep working out" }),
+    ).toBeDisabled();
+    fireEvent(
+      screen.getByRole("dialog"),
+      new Event("cancel", { cancelable: true }),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await act(async () =>
+      resolve({
+        ...data,
+        status: "completed",
+        completedAt: "2026-09-24T13:00:00Z",
+      }),
+    );
+  });
+
+  it("recovers a completed session after an ambiguous failure without finishing twice", async () => {
+    const data = _render([savedSet]);
+    vi.mocked(endV2Workout).mockRejectedValue(new Error("response lost"));
+    vi.mocked(reloadV2Workout)
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce({
+        ...data,
+        status: "completed",
+        completedAt: "2026-09-24T13:00:00Z",
+      });
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm finish" }));
+    await screen.findByRole("button", { name: "Check workout status" });
+    expect(
+      screen.getByRole("button", { name: "Confirm finish" }),
+    ).toBeDisabled();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Check workout status" }),
+    );
+    await screen.findByRole("heading", { name: "Workout complete" });
+    expect(endV2Workout).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps unsaved edits when finishing fails and the workout is still active", async () => {
+    const data = _render([savedSet]);
+    _reps("9");
+    vi.mocked(endV2Workout).mockRejectedValue(new Error("failed"));
+    vi.mocked(reloadV2Workout).mockResolvedValue(data);
+    fireEvent.click(screen.getByRole("button", { name: "Finish workout" }));
+    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getByRole("button", { name: "Confirm finish" }));
+    await waitFor(() =>
+      expect(
+        within(screen.getByRole("dialog")).getByRole("alert"),
+      ).toHaveTextContent("Your input is kept"),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Keep working out" }));
+    expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(9);
+    expect(refresh).not.toHaveBeenCalled();
+  });
   it("defaults to Skip and clears a selected effort without submitting the set", () => {
     _render();
-    expect(
-      screen.getByRole("button", { name: "Skip", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(screen.getByRole("button", { name: "0", exact: true }));
-    expect(
-      screen.getByRole("button", { name: "0", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
-    expect(
-      screen.getByRole("button", { name: "Skip", exact: true }),
-    ).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(screen.getByRole("button", { name: "Skip", exact: true }));
-    expect(
-      screen.getByRole("button", { name: "Skip", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "Skip" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "0" }));
+    expect(screen.getByRole("button", { name: "0" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Skip" })).toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Skip" }));
+    expect(screen.getByRole("button", { name: "Skip" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(saveWorkoutSetAction).not.toHaveBeenCalled();
   });
 
   it("preserves an existing higher RIR when only reps are edited", async () => {
     _render([{ ...savedSet, rir: 7 }]);
     fireEvent.click(screen.getByRole("button", { name: "Edit set 1" }));
-    expect(
-      screen.getByRole("button", { name: "3+", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "3+" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     _reps("9");
     vi.mocked(saveWorkoutSetAction).mockResolvedValue({
       ...savedSet,
@@ -189,7 +356,7 @@ describe("Focused workout", () => {
       },
     });
     _reps("9");
-    fireEvent.click(screen.getByRole("button", { name: "3+", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "3+" }));
     fireEvent.click(
       screen.getByRole("button", { name: "Use suggested weight" }),
     );
@@ -197,9 +364,10 @@ describe("Focused workout", () => {
       95,
     );
     expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(9);
-    expect(
-      screen.getByRole("button", { name: "3+", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "3+" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(saveWorkoutSetAction).not.toHaveBeenCalled();
   });
 
@@ -208,7 +376,7 @@ describe("Focused workout", () => {
     _render();
     _reps("8");
     const event = new MouseEvent("click", { bubbles: true, cancelable: true });
-    screen.getByRole("link", { name: "Finish / abandon" }).dispatchEvent(event);
+    screen.getByRole("link", { name: "← Today" }).dispatchEvent(event);
     expect(confirm).toHaveBeenCalled();
     expect(event.defaultPrevented).toBe(true);
     confirm.mockRestore();
@@ -216,14 +384,15 @@ describe("Focused workout", () => {
   it("keeps per-exercise drafts when switching exercises", () => {
     _render();
     _reps("9");
-    fireEvent.click(screen.getByRole("button", { name: "3+", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "3+" }));
     _switch("Cable Row");
     _reps("7");
     _switch("Bench Press");
     expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(9);
-    expect(
-      screen.getByRole("button", { name: "3+", exact: true }),
-    ).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: "3+" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
     expect(saveWorkoutSetAction).not.toHaveBeenCalled();
   });
 
@@ -331,7 +500,7 @@ describe("Focused workout", () => {
       52.5,
     );
     _reps("8");
-    fireEvent.click(screen.getByRole("button", { name: "3+", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: "3+" }));
     vi.mocked(saveWorkoutSetAction).mockResolvedValue({
       ...savedSet,
       weightValue: 52.5,
@@ -360,8 +529,9 @@ describe("Focused workout", () => {
     expect(
       screen.queryByRole("button", { name: "Log set" }),
     ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "View workout results" }),
-    ).toHaveAttribute("href", "/workouts/workout");
+    expect(screen.getByRole("link", { name: "Back to Today" })).toHaveAttribute(
+      "href",
+      "/v2",
+    );
   });
 });
