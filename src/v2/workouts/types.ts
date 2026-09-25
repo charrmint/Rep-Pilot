@@ -31,3 +31,21 @@ export interface SetEditorProps {
   onSave: () => void;
   onCancel: () => void;
 }
+
+export type WorkoutEndIntent = "finish" | "abandon";
+export interface WorkoutConfirmationProps {
+  intent: WorkoutEndIntent;
+  logged: number;
+  remaining: number;
+  hasDrafts: boolean;
+  canFinish: boolean;
+  pending: boolean;
+  unverified: boolean;
+  error: string | null;
+  onConfirm: () => void;
+  onDismiss: () => void;
+  onCheck: () => void;
+}
+export interface WorkoutResultsProps {
+  workout: WorkoutSession;
+}
