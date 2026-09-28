@@ -15,12 +15,13 @@ import type {
 import { completeWorkoutWithResultsRow } from "./workout-completion-queries";
 import {
   getWorkoutSessionRow,
+  getLatestCompletedWorkoutSessionRow,
   listPreviousWorkoutSessionExerciseRows,
   listWorkoutSessionExerciseRows,
   listWorkoutSetRows,
   updateWorkoutSessionRow,
 } from "./workout-queries";
-import { finishWorkout, getWorkoutSession } from "./workout-service";
+import { finishWorkout, getWorkoutSession, getLatestCompletedWorkout } from "./workout-service";
 import type { ProgressionRecommendationRow } from "../progression/types";
 import type {
   PreviousWorkoutSessionExerciseRow,
@@ -33,6 +34,7 @@ vi.mock("./workout-queries", () => ({
   createWorkoutSetRow: vi.fn(),
   deleteWorkoutSetRow: vi.fn(),
   getActiveWorkoutSessionRow: vi.fn(),
+  getLatestCompletedWorkoutSessionRow: vi.fn(),
   getExerciseHistorySubjectRow: vi.fn(),
   getWorkoutHistoryTemplateRow: vi.fn(),
   getWorkoutSessionExerciseRow: vi.fn(),
@@ -701,3 +703,59 @@ function _previousRecord({
     performedAt: "2026-08-01T17:00:00.000Z",
   };
 }
+
+
+describe("getLatestCompletedWorkout", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    vi.mocked(getLatestCompletedWorkoutSessionRow).mockResolvedValue({ id: "session-id" });
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue({
+      ...SESSION_ROW, status: "completed", completed_at: "2026-09-01T17:00:00.000Z",
+    });
+    vi.mocked(listWorkoutSessionExerciseRows).mockResolvedValue([EXERCISE_ROW]);
+    vi.mocked(listWorkoutSetRows).mockResolvedValue([]);
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([]);
+    vi.mocked(listStrengthRecordsForSessionExercises).mockResolvedValue([]);
+  });
+
+  it("uses the existing owned result loader and persisted insight reads", async () => {
+    const recommendation = _recommendationRow({
+      id: "saved-recommendation", workoutSessionExerciseId: EXERCISE_ROW.id,
+      recommendedWeightLbs: 140,
+    });
+    vi.mocked(listProgressionRecommendationRows).mockResolvedValue([recommendation]);
+    const workout = await getLatestCompletedWorkout("user-id");
+    expect(getLatestCompletedWorkoutSessionRow).toHaveBeenCalledWith("user-id");
+    expect(getWorkoutSessionRow).toHaveBeenCalledWith({ userId: "user-id", sessionId: "session-id" });
+    expect(workout?.status).toBe("completed");
+    expect(workout?.exercises[0].recommendation?.id).toBe("saved-recommendation");
+    expect(listStrengthRecordsForSessionExercises).toHaveBeenCalledWith({
+      userId: "user-id", sessionExerciseIds: [EXERCISE_ROW.id],
+    });
+    expect(listPreviousWorkoutSessionExerciseRows).not.toHaveBeenCalled();
+    expect(completeWorkoutWithResultsRow).not.toHaveBeenCalled();
+  });
+  it("does not load a session when there are no completed sessions", async () => {
+    vi.mocked(getLatestCompletedWorkoutSessionRow).mockResolvedValue(null);
+    expect(await getLatestCompletedWorkout("user-id")).toBeNull();
+    expect(getWorkoutSessionRow).not.toHaveBeenCalled();
+  });
+  it("preserves a deleted-plan fallback and a missing completion timestamp", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue({ ...SESSION_ROW, status: "completed", template: null });
+    const workout = await getLatestCompletedWorkout("user-id");
+    expect(workout?.templateName).toBe("Workout");
+    expect(workout?.completedAt).toBeNull();
+  });
+  it("does not turn a missing result into an empty history", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue(null);
+    await expect(getLatestCompletedWorkout("user-id")).rejects.toThrow("no longer available");
+  });
+  it("rejects a session whose status changed after selection", async () => {
+    vi.mocked(getWorkoutSessionRow).mockResolvedValue({ ...SESSION_ROW, status: "cancelled" });
+    await expect(getLatestCompletedWorkout("user-id")).rejects.toThrow("no longer available");
+  });
+  it("propagates persisted-insight failures instead of displaying absent recommendations", async () => {
+    vi.mocked(listProgressionRecommendationRows).mockRejectedValue(new Error("read failed"));
+    await expect(getLatestCompletedWorkout("user-id")).rejects.toThrow("read failed");
+  });
+});

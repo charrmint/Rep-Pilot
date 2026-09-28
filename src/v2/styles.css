@@ -1060,3 +1060,39 @@
   .v2-quick-start-plan { grid-template-columns: minmax(0, 1fr) minmax(160px, auto); align-items: center; }
   .v2-quick-start-plan .v2-start-control { max-width: 320px; }
 }
+
+
+.v2-today-insights {
+  align-items: start;
+}
+.v2-today-insight {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.v2-today-insight > h3 {
+  font-size: 1.25rem;
+}
+.v2-today-insight > .v2-button {
+  align-self: flex-start;
+}
+.v2-insight-date {
+  font-size: 0.8rem;
+}
+.v2-today-insight .v2-result-insights > section {
+  margin-top: 0;
+}
+.v2-today-records {
+  grid-column: 1 / -1;
+}
+
+.v2-today-insights-heading {
+  margin-bottom: var(--v2-space-5);
+}
+@media (min-width: 980px) {
+  .v2-today-insights-heading {
+    justify-content: center;
+    text-align: center;
+  }
+}

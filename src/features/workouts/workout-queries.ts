@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 import type {
+  LatestCompletedWorkoutSessionRow,
   ExerciseHistoryPerformanceRow,
   ExerciseHistorySubjectRow,
   ExerciseHistorySummaryRow,
@@ -109,6 +110,29 @@ export async function getActiveWorkoutSessionRow(
   }
 
   return data as WorkoutSessionRowWithTemplate | null;
+}
+
+export async function getLatestCompletedWorkoutSessionRow(
+  userId: string,
+): Promise<LatestCompletedWorkoutSessionRow | null> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("workout_sessions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("status", "completed")
+    // Undated legacy completions must not outrank known completion times.
+    .order("completed_at", { ascending: false, nullsFirst: false })
+    .order("started_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`Failed to get latest completed workout: ${error.message}`);
+  }
+
+  return data;
 }
 
 export async function getWorkoutSessionRow({

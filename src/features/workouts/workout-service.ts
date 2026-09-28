@@ -26,6 +26,7 @@ import {
   createWorkoutSetRow,
   deleteWorkoutSetRow,
   getActiveWorkoutSessionRow,
+  getLatestCompletedWorkoutSessionRow,
   getExerciseHistorySubjectRow,
   getWorkoutSessionExerciseRow,
   getWorkoutHistoryTemplateRow,
@@ -134,6 +135,19 @@ export async function getWorkoutSession({
     recommendationRows,
     strengthRecords,
   );
+}
+
+export async function getLatestCompletedWorkout(
+  userId: string,
+): Promise<WorkoutSession | null> {
+  const row = await getLatestCompletedWorkoutSessionRow(userId);
+  if (!row) return null;
+
+  const workout = await getWorkoutSession({ userId, sessionId: row.id });
+  if (!workout || workout.status !== "completed") {
+    throw new Error("The latest completed workout is no longer available.");
+  }
+  return workout;
 }
 
 export async function listRecentWorkoutHistory({

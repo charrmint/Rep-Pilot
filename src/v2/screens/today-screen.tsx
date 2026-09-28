@@ -7,6 +7,7 @@ import { SignInCard } from "../ui/sign-in-card";
 import { RetryButton } from "../ui/retry-button";
 import { ElapsedTime } from "../workouts/elapsed-time";
 import { ActiveProgress } from "../today/active-progress";
+import { TodayInsights } from "../today/today-insights";
 import { loadTodayPlans } from "../today/data";
 import { NextWorkout, TodayPlans, TodayPlansHeading } from "../today/today-plans";
 
@@ -44,6 +45,19 @@ export async function TodayScreen() {
             <TodayPlansHeading />
             <Suspense fallback={<Card><p role="status">Loading quick-start plans…</p></Card>}>
               <TodayPlans plans={plans} activeWorkout={activeWorkout} activeWorkoutUnavailable={activeWorkoutUnavailable} />
+            </Suspense>
+          </section>
+          <section aria-labelledby="today-insights-heading">
+            <div className="v2-section-heading v2-today-insights-heading">
+              <div>
+                <p className="v2-eyebrow">Your progress</p>
+                <h2 id="today-insights-heading">Build on your last session.</h2>
+              </div>
+            </div>
+            <Suspense fallback={
+              <Card><p role="status">Loading your last completed workout…</p></Card>
+            }>
+              <TodayInsights userId={user.id} />
             </Suspense>
           </section>
           <div className="v2-actions v2-today-links">

@@ -7,6 +7,12 @@ import { ProfileScreen } from "./profile-screen";
 
 vi.mock("../server/context", () => ({ getV2Context: vi.fn() }));
 vi.mock("../today/data", () => ({ loadTodayPlans: vi.fn() }));
+vi.mock("../today/today-insights", () => ({
+  TodayInsights: () => {
+    if (insightRead.pending) throw new Promise(() => {});
+    return <p>Completed workout insights</p>;
+  },
+}));
 vi.mock("../today/active-progress", () => ({ ActiveProgress: () => <p>Saved progress</p> }));
 vi.mock("../today/today-plans", () => ({
   NextWorkout: () => <h2>Choose a plan</h2>,
@@ -16,7 +22,8 @@ vi.mock("../today/today-plans", () => ({
 vi.mock("./sign-out-button", () => ({ SignOutButton: () => <button>Sign out</button> }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 afterEach(cleanup);
-beforeEach(() => vi.resetAllMocks());
+beforeEach(() => { vi.resetAllMocks(); insightRead.pending = false; });
+const insightRead = vi.hoisted(() => ({ pending: false }));
 const user = { id: "owner", email: "owner@example.com" } as NonNullable<Awaited<ReturnType<typeof getV2Context>>["user"]>;
 
 it("keeps signed-out visitors out of personal reads and empty account states", async () => {
@@ -24,6 +31,7 @@ it("keeps signed-out visitors out of personal reads and empty account states", a
   render(await TodayScreen());
   expect(screen.getByRole("link", { name: "Sign in" })).toBeInTheDocument();
   expect(loadTodayPlans).not.toHaveBeenCalled();
+  expect(screen.queryByText("Completed workout insights")).not.toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Quick start" })).not.toBeInTheDocument();
 });
 it("renders resume without waiting for optional plan data", async () => {
@@ -45,4 +53,15 @@ it("keeps Profile account controls available during a workout read failure", asy
   render(await ProfileScreen());
   expect(screen.getByRole("heading", { name: "owner@example.com" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Sign out" })).toBeInTheDocument();
+});
+
+
+it("keeps resume and plan choices available while completed history is still loading", async () => {
+  insightRead.pending = true;
+  vi.mocked(getV2Context).mockResolvedValue({ user, activeWorkout: { id: "live", templateName: "Current plan", startedAt: "2026-09-24T12:00:00Z" }, activeWorkoutUnavailable: false });
+  vi.mocked(loadTodayPlans).mockReturnValue(new Promise(() => {}));
+  render(await TodayScreen());
+  expect(screen.getByRole("link", { name: "Resume workout" })).toHaveAttribute("href", "/v2/workouts/live");
+  expect(screen.getByText("Plan choices")).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading your last completed workout");
 });
