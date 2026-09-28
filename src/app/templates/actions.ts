@@ -31,6 +31,7 @@ export async function createWorkoutTemplateAction(
     });
     templateId = template.id;
     revalidatePath("/templates");
+    revalidatePath("/v2", "layout");
   } catch (error) {
     return _toFormActionError(error);
   }
@@ -57,6 +58,7 @@ export async function setWorkoutTemplateArchiveStatusAction(
       isArchived,
     });
     revalidatePath("/templates");
+    revalidatePath("/v2", "layout");
 
     return {
       status: "success",

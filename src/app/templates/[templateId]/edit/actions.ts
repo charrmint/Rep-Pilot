@@ -196,6 +196,7 @@ function _readMoveDirection(
 }
 
 function _revalidateTemplateRoutes(templateId: string): void {
+  revalidatePath("/v2", "layout");
   revalidatePath("/templates");
   revalidatePath(`/templates/${templateId}/edit`);
 }
