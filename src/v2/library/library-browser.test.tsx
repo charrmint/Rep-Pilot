@@ -102,11 +102,11 @@ describe("V2 library", () => {
     ).toBeInTheDocument();
   });
 
-  it("links active plans to their existing editor and archived plans to management", () => {
+  it("links active and archived plans to their v2 plan page", () => {
     render(<LibraryBrowser view="plans" plans={plans} />);
     expect(screen.getByRole("link", { name: "Edit plan" })).toHaveAttribute(
       "href",
-      "/templates/upper/edit",
+      "/v2/library/plans/upper",
     );
     expect(
       screen.queryByRole("heading", { name: "Previous routine" }),
@@ -117,7 +117,7 @@ describe("V2 library", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Manage plan" })).toHaveAttribute(
       "href",
-      "/templates",
+      "/v2/library/plans/old",
     );
   });
 });

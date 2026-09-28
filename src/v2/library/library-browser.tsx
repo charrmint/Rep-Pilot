@@ -95,7 +95,7 @@ export function LibraryBrowser({
             </Button>
           ) : (
             !archived && (
-              <ButtonLink href={view === "plans" ? "/templates" : "/exercises"}>
+              <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "/exercises"}>
                 Create {view === "plans" ? "a plan" : "an exercise"}
               </ButtonLink>
             )
@@ -153,7 +153,7 @@ export function LibraryBrowser({
                   <ButtonLink
                     variant="secondary"
                     href={
-                      archived ? "/templates" : `/templates/${plan.id}/edit`
+                      `/v2/library/plans/${plan.id}`
                     }
                   >
                     {archived ? "Manage plan" : "Edit plan"}

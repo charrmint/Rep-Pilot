@@ -21,14 +21,22 @@ Client modules receive presentation data, never a database client or credential.
 | -------------------------- | -------------------------------------------------------- |
 | `/v2`                      | Training entry screen and resume action                  |
 | `/v2/library`              | Search active/archived plans and inspect their exercises |
+| `/v2/library/plans/new` | Create a plan |
+| `/v2/library/plans/[templateId]` | Rename a plan and preview exercises |
 | `/v2/library/exercises`    | Search active/archived exercises and open history        |
 | `/v2/history`              | Entry points to session, plan, and exercise history      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
 | `/v2/workouts/[sessionId]` | Workout logging, completion, and read-only results       |
 
-The library uses live account data. Plan creation/editing, archive management,
-exercise management and history browsing currently open the
-existing routes. Login and demo entry also use the existing routes and keep their
+The library uses live account data. Plan creation and renaming stay in v2 and
+reuse existing name validation, duplicate checks (including archived plans), and
+owner-scoped services. Successful creation opens the new plan; renaming retains
+its ID and exercises. Saves refresh v2 and related classic views. Failed saves
+retain the entered name; uncertain responses prompt checking the library before
+retrying. Name drafts stay in memory; app links warn before discarding them and
+refresh/close uses the browser warning. Browser history navigation is not intercepted.
+Exercise editing, archive management, exercise management, and history browsing
+currently open the existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
 ## Design foundations
@@ -105,7 +113,7 @@ v2 navigation and invalidate the related classic workout/history views.
 - **Today:** the active session leads with elapsed time and saved planned-set
   progress; extra sets do not fill missing planned positions. Up to two active
   plans with exercises appear in recently-updated order, with ID breaking ties.
-  Empty accounts lead to classic plan creation; incomplete and archived plans
+  Empty accounts lead to v2 plan creation; incomplete and archived plans
   lead to Library. Plans and progress stream independently so a slow or failed
   optional read does not remove Resume. Failed active-workout reads preserve
   account access but disable starts in Today and Library until a refresh succeeds.

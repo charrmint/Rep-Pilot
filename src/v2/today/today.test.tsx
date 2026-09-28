@@ -63,11 +63,11 @@ describe("Today plan selection and reads", () => {
 });
 
 describe("Today next action", () => {
-  it("sends a new account to classic plan creation", async () => {
+  it("sends a new account to v2 plan creation", async () => {
     render(await NextWorkout({ plans: _plans(_library()) }));
-    expect(screen.getByRole("link", { name: "Create a plan" })).toHaveAttribute("href", "/templates");
+    expect(screen.getByRole("link", { name: "Create a plan" })).toHaveAttribute("href", "/v2/library/plans/new");
     expect(screen.queryByRole("link", { name: "Choose a workout" })).not.toBeInTheDocument();
-    expect(screen.getByText(/creation and editing open in the classic app/)).toBeInTheDocument();
+    expect(screen.getByText(/Exercise editing opens in the classic app/)).toBeInTheDocument();
   });
   it("offers setup for active plans without exercises", async () => {
     render(await NextWorkout({ plans: _plans(_library([{ ..._plan("a"), exercises: [] }])) }));
@@ -121,7 +121,7 @@ describe("Today quick start", () => {
     const library = state === "empty" ? _library() : state === "incomplete" ? _library([{ ..._plan("a"), exercises: [] }]) : _library([], [_plan("a")]);
     render(await TodayPlans({ plans: _plans(library), activeWorkout, activeWorkoutUnavailable: false }));
     expect(screen.queryByRole("button", { name: "Start workout" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link")).toHaveAttribute("href", state === "empty" ? "/templates" : "/v2/library");
+    expect(screen.getByRole("link")).toHaveAttribute("href", state === "empty" ? "/v2/library/plans/new" : "/v2/library");
   });
 });
 

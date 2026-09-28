@@ -24,7 +24,7 @@ export async function LibraryScreen({ view }: { view: LibraryView }) {
         description="Your plans and exercises. Ready for the next session."
         action={
           user ? (
-            <ButtonLink href={view === "plans" ? "/templates" : "/exercises"}>
+            <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "/exercises"}>
               <Icon name="plus" />
               {view === "plans" ? "Create a plan" : "Manage exercises"}
             </ButtonLink>
