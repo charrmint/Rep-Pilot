@@ -30,6 +30,7 @@ import { ElapsedTime } from "./elapsed-time";
 import { useLeaveWarning } from "./use-leave-warning";
 import { isValidStrengthSet } from "@/lib/metrics/strength";
 import { WorkoutConfirmation } from "./workout-confirmation";
+import { WorkoutOptions } from "./workout-options";
 import { WorkoutResults } from "./workout-results";
 
 export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
@@ -47,6 +48,8 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
   const [positions, setPositions] = useState<Record<string, number | null>>({});
   const [pending, setPending] = useState(false);
   const lock = useRef(false);
+  const confirmationTrigger = useRef<HTMLElement | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [unverified, setUnverified] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +92,7 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
   function _openConfirmation(value: WorkoutEndIntent) {
     if (pending || unverified || lock.current) return;
     setError(null);
+    confirmationTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setIntent(value);
   }
   async function _endWorkout() {
@@ -128,7 +132,12 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
       unverified={unverified}
       error={error}
       onConfirm={_endWorkout}
-      onDismiss={() => setIntent(null)}
+      onDismiss={() => {
+        setIntent(null);
+        requestAnimationFrame(() => {
+          if (confirmationTrigger.current?.isConnected) confirmationTrigger.current.focus();
+        });
+      }}
       onCheck={_checkSaved}
     />
   ) : null;
@@ -295,6 +304,7 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
         }));
       setDeleteId(null);
       setNotice(`Set ${set.position} deleted.`);
+      requestAnimationFrame(() => editorRef.current?.querySelector<HTMLElement>(".v2-set-editor-heading")?.focus());
     } catch (error) {
       unstable_rethrow(error);
       await _recover();
@@ -341,13 +351,7 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           <strong>{workout.templateName}</strong>
           <ElapsedTime startedAt={workout.startedAt} />
         </div>
-        <Button
-          variant="quiet"
-          disabled={pending || unverified}
-          onClick={() => _openConfirmation("abandon")}
-        >
-          Abandon
-        </Button>
+        <WorkoutOptions disabled={pending || unverified} onAbandon={() => _openConfirmation("abandon")} />
       </header>
       <nav className="v2-exercise-tabs" aria-label="Workout exercises">
         {workout.exercises.map((item) => (
@@ -380,11 +384,12 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           {plannedSetCount(exercise)} / {exercise.targetSets} planned
         </span>
       </div>
-      <p className="v2-muted">
-        {exercise.targetSets} sets · {exercise.minReps}–{exercise.maxReps} reps
-        · Planned {exercise.plannedWeightValue} {exercise.plannedWeightUnit}
-      </p>
-      <ExerciseContext
+      <div className="v2-workout-prescription" aria-label="Exercise prescription">
+        <span className="v2-chip">{exercise.targetSets} planned sets</span>
+        <span className="v2-chip">Target {exercise.minReps}–{exercise.maxReps} reps</span>
+        <span className="v2-chip">Planned {exercise.plannedWeightValue} {exercise.plannedWeightUnit}</span>
+      </div>
+      <ExerciseContext key={exercise.id}
         exercise={exercise}
         disabled={pending || unverified || Boolean(saved) || !draft}
         onApply={(weight) => {
@@ -397,61 +402,29 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           <span className="v2-muted">{exercise.sets.length} saved</span>
         </div>
         {exercise.sets.length ? (
-          <ol className="v2-saved-sets">
-            {exercise.sets.map((set) => (
-              <li key={set.id}>
-                <div>
-                  <strong>Set {set.position}</strong>
-                  <span>
-                    {set.weightValue} {set.weightUnit} × {set.reps}
-                    {set.rir !== null && ` · ${set.rir} RIR`}
-                  </span>
-                </div>
-                <div className="v2-actions">
-                  <Button
-                    variant="quiet"
-                    disabled={pending || unverified}
-                    aria-label={`Edit set ${set.position}`}
-                    onClick={() => _selectPosition(set.position)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="quiet"
-                    disabled={pending || unverified}
-                    aria-label={`Delete set ${set.position}`}
-                    onClick={() => setDeleteId(set.id)}
-                  >
-                    Delete
-                  </Button>
-                </div>
-                {deleteId === set.id && (
-                  <div className="v2-delete-confirm">
-                    <p>
-                      Delete set {set.position}? This also discards any unsaved
-                      edits to this set.
-                    </p>
-                    <div className="v2-actions">
-                      <Button
-                        variant="secondary"
-                        disabled={pending}
-                        onClick={() => _delete(set)}
-                      >
-                        Confirm delete
-                      </Button>
-                      <Button
-                        variant="quiet"
-                        disabled={pending}
-                        onClick={() => setDeleteId(null)}
-                      >
-                        Keep set
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ol>
+          <div className="v2-set-table-wrap">
+            <table className="v2-set-table">
+              <caption className="sr-only">Saved sets for {exercise.exerciseName}. RIR means reps in reserve.</caption>
+              <thead><tr><th scope="col">Set</th><th scope="col">Weight</th><th scope="col">Reps</th><th scope="col"><abbr title="Reps in reserve">RIR</abbr></th><th scope="col"><span className="sr-only">Actions</span></th></tr></thead>
+              <tbody>{exercise.sets.map((set) => (
+                <tr key={set.id} aria-current={saved?.id === set.id ? "true" : undefined}>
+                  <th scope="row">{set.position}</th>
+                  <td>{set.weightValue} {set.weightUnit}</td>
+                  <td>{set.reps}</td>
+                  <td>{set.rir ?? <span aria-label="Not recorded">—</span>}</td>
+                  <td><Button variant="quiet" disabled={pending || unverified} aria-label={`Edit set ${set.position}`}
+                    onClick={() => {
+                      _selectPosition(set.position);
+                      requestAnimationFrame(() => {
+                        const heading = editorRef.current?.querySelector<HTMLElement>(".v2-set-editor-heading");
+                        heading?.focus({ preventScroll: true });
+                        heading?.scrollIntoView?.({ block: "center" });
+                      });
+                    }}>Edit</Button></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
         ) : (
           <p className="v2-muted">No sets logged yet.</p>
         )}
@@ -470,9 +443,10 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           )}
         </div>
       )}
-      <p className="v2-save-notice" role="status">
+      <p className={pending || notice ? "v2-save-notice" : "sr-only"} role="status">
         {pending ? "Saving or checking your sets…" : notice}
       </p>
+      <div ref={editorRef}>
       {draft && position !== null ? (
         <SetEditor
           exercise={exercise}
@@ -482,6 +456,10 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           disabled={pending || unverified}
           onChange={_changeDraft}
           onSave={_save}
+          onDelete={saved ? () => setDeleteId(saved.id) : undefined}
+          confirmingDelete={Boolean(saved && deleteId === saved.id)}
+          onConfirmDelete={saved ? () => _delete(saved) : undefined}
+          onCancelDelete={() => setDeleteId(null)}
           onCancel={() => {
             _clearDraft(exercise.id, position);
             _selectPosition(_nextDraft(exercise));
@@ -495,8 +473,8 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           </p>
         </Card>
       )}
-      <div className="v2-actions">
-        {position === null && (
+      </div>
+      {position === null && <div className="v2-actions">
           <Button
             variant="secondary"
             disabled={pending || unverified}
@@ -512,19 +490,18 @@ export function FocusedWorkout({ initialWorkout }: WorkoutScreenProps) {
           >
             Add another set
           </Button>
-        )}
-        {nextExercise && (
-          <Button
-            variant="secondary"
-            disabled={pending}
-            onClick={() => {
-              _selectExercise(nextExercise.id);
-            }}
-          >
-            Next: {nextExercise.exerciseName} →
-          </Button>
-        )}
-      </div>
+      </div>}
+      {nextExercise && (
+        <Card className="v2-next-exercise">
+          <div>
+            <p className="v2-eyebrow">Up next</p>
+            <h2>{nextExercise.exerciseName}</h2>
+            <p className="v2-muted">{nextExercise.targetSets} sets · {nextExercise.minReps}–{nextExercise.maxReps} reps · {nextExercise.plannedWeightValue} {nextExercise.plannedWeightUnit}</p>
+          </div>
+          <Button variant="secondary" disabled={pending} aria-label={`Go to ${nextExercise.exerciseName}`}
+            onClick={() => _selectExercise(nextExercise.id)}>Next exercise →</Button>
+        </Card>
+      )}
       <footer className="v2-workout-footer">
         <div>
           <strong>

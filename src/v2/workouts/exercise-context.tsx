@@ -1,4 +1,4 @@
-import type { WorkoutSessionExercise } from "@/features/workouts/types";
+import type { ExerciseContextProps } from "./types";
 import { LocalDateTime } from "@/features/workouts/components/local-date-time";
 import { Button, Card } from "../ui/primitives";
 import { hasCompleteRecommendationPrescription } from "@/features/progression/components/recommendation-summary";
@@ -8,11 +8,7 @@ export function ExerciseContext({
   exercise,
   disabled,
   onApply,
-}: {
-  exercise: WorkoutSessionExercise;
-  disabled: boolean;
-  onApply: (weight: string) => void;
-}) {
+}: ExerciseContextProps) {
   const previous = exercise.previousPerformance;
   const suggestion = previous?.recommendation;
   const weight = suggestion?.recommendedWeightLbs;
@@ -31,17 +27,26 @@ export function ExerciseContext({
           ).toFixed(2),
         )
       : null;
+  const sets = [...(previous?.sets ?? [])].sort((left, right) => left.position - right.position);
+  const first = sets[0];
+  const sameLoad = first && sets.every((set) => set.weightValue === first.weightValue && set.weightUnit === first.weightUnit);
   return (
-    <div className="v2-workout-context">
-      <Card>
+    <Card className="v2-workout-context">
+      <div className="v2-previous-summary">
         <h2>Last time</h2>
         {previous ? (
           <>
             <p className="v2-muted">
               <LocalDateTime value={previous.startedAt} dateStyle="medium" />
             </p>
-            <ul className="v2-previous-sets">
-              {previous.sets.map((set) => (
+            <p className="v2-previous-highlight">
+              {sameLoad ? `${first.weightValue} ${first.weightUnit} · ${sets.map((set) => set.reps).join(", ")} reps`
+                : sets.length ? `${sets.length} saved sets · varied weights or units` : "No previous completed sets."}
+            </p>
+            {sets.length > 0 && <details>
+              <summary>View previous sets ({sets.length})</summary>
+              <ul className="v2-previous-sets">
+              {sets.map((set) => (
                 <li key={set.id}>
                   Set {set.position}: {set.weightValue} {set.weightUnit} ×{" "}
                   {set.reps}
@@ -49,27 +54,28 @@ export function ExerciseContext({
                 </li>
               ))}
             </ul>
+            </details>}
           </>
         ) : (
           <p className="v2-muted">No previous completed sets.</p>
         )}
-      </Card>
+      </div>
       {suggestion && (
-        <Card>
+        <div className="v2-context-suggestion">
           <p className="v2-eyebrow">Suggested from last workout</p>
           <h2>
             {suggestion.action === "review" || displayWeight === null
               ? "Review before your next session"
               : `${suggestion.action === "increase" ? "Increase to" : suggestion.action === "reduce" ? "Reduce to" : "Stay at"} ${displayWeight} ${exercise.plannedWeightUnit}`}
           </h2>
+          <details>
+            <summary>Why this suggestion?</summary>
           {hasCompleteRecommendationPrescription(suggestion) && (
             <p className="v2-muted">
               {suggestion.recommendedMinReps}–{suggestion.recommendedMaxReps}{" "}
               reps · approximately {suggestion.recommendedRir} RIR
             </p>
           )}
-          <details>
-            <summary>Why this suggestion?</summary>
             <p>{suggestion.explanation}</p>
           </details>
           {actionable && displayWeight !== null && (
@@ -81,8 +87,8 @@ export function ExerciseContext({
               Use suggested weight
             </Button>
           )}
-        </Card>
+        </div>
       )}
-    </div>
+    </Card>
   );
 }
