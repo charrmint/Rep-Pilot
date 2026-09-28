@@ -110,8 +110,17 @@ v2 navigation and invalidate the related classic workout/history views.
   optional read does not remove Resume. Failed active-workout reads preserve
   account access but disable starts in Today and Library until a refresh succeeds.
   Set mutations invalidate Today; lifecycle mutations refresh v2 navigation.
-  Contextual progression and last-session cards remain future additions. Never
-  substitute sample metrics for missing data.
+  The latest completed workout is selected across all sessions by completion
+  time, then start time and ID; undated legacy completions sort last and show no
+  invented finish time or duration. Summary counts use saved sets (including
+  extras) and exercises with saved sets, matching results rather than claiming
+  every planned exercise was finished. The first exercise in session order with
+  a saved recommendation and the first with saved records provide contextual
+  previews. Shared result components preserve units, explanations, and baseline
+  labels. These are saved outcomes of that workout, not prescriptions for an
+  unrelated or edited plan. Insights load independently of start/resume, with
+  explicit empty and retry states. No recommendations are recalculated on read.
+  Never substitute sample metrics for missing data.
 - **Plan editor:** name and primary save action, ordered exercise cards, exercise
   picker, then archive management. Each exercise card groups sets, rep range,
   load/unit, and increment. Keep reorder/remove actions near their exercise.

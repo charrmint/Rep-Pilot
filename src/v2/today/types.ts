@@ -1,4 +1,5 @@
 import type { WorkoutTemplateLibrary } from "@/features/templates/types";
+import type { WorkoutSession } from "@/features/workouts/types";
 import type { V2Context } from "../server/types";
 
 export type TodayPlansResult =
@@ -17,4 +18,13 @@ export interface TodayPlansProps extends NextWorkoutProps {
 export interface ActiveProgressProps {
   userId: string;
   sessionId: string;
+}
+
+
+export interface TodayInsightsProps {
+  userId: string;
+}
+
+export interface CompletedWorkoutInsightsProps {
+  workout: WorkoutSession;
 }
