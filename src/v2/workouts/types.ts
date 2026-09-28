@@ -31,6 +31,10 @@ export interface SetEditorProps {
   onChange: (draft: SetDraft) => void;
   onSave: () => void;
   onCancel: () => void;
+  onDelete?: () => void;
+  onConfirmDelete?: () => void;
+  onCancelDelete?: () => void;
+  confirmingDelete?: boolean;
 }
 
 export type WorkoutEndIntent = "finish" | "abandon";
@@ -49,4 +53,15 @@ export interface WorkoutConfirmationProps {
 }
 export interface WorkoutResultsProps {
   workout: WorkoutSession;
+}
+
+export interface ExerciseContextProps {
+  exercise: WorkoutSessionExercise;
+  disabled: boolean;
+  onApply: (weight: string) => void;
+}
+
+export interface WorkoutOptionsProps {
+  disabled: boolean;
+  onAbandon: () => void;
 }
