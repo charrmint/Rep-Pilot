@@ -127,8 +127,12 @@ v2 navigation and invalidate the related classic workout/history views.
 - **History:** session/plan/exercise navigation above compact result cards, with
   pagination. Detail views expand sets and retain records and recommendation
   explanations. Completed and abandoned sessions remain distinguishable.
-- **Profile:** account section followed by unit preferences when implemented.
-  Do not show nonfunctional preference toggles.
+- **Profile:** account identity followed by password recovery and sign-out.
+  Reset password opens the existing email recovery flow; demo accounts do not
+  show recovery controls. Sign-out uses the shared global sign-out service,
+  prevents duplicate submissions, and retains retry feedback on failure.
+  Classic access remains a secondary link. Unit preferences are not active;
+  there are no nonfunctional preference toggles.
 - **Authentication:** a centered form card using the same labeled fields and
   buttons, with inline validation and recovery links.
 
