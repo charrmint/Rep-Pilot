@@ -535,3 +535,16 @@ describe("Focused workout", () => {
     );
   });
 });
+
+it("steps reps without submitting, clamps at zero, and keeps direct typing", () => {
+  _render();
+  fireEvent.click(screen.getByRole("button", { name: "Increase reps by 1" }));
+  expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(1);
+  fireEvent.click(screen.getByRole("button", { name: "Decrease reps by 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Decrease reps by 1" }));
+  expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(0);
+  _reps("12");
+  fireEvent.click(screen.getByRole("button", { name: "Increase reps by 1" }));
+  expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(13);
+  expect(saveWorkoutSetAction).not.toHaveBeenCalled();
+});

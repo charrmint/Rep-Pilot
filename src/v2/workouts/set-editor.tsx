@@ -1,7 +1,8 @@
 "use client";
 
 import { poundsToKilograms } from "@/lib/units/weight";
-import { Button, Card, Input } from "../ui/primitives";
+import { useId } from "react";
+import { Button, Card } from "../ui/primitives";
 import type { SetEditorProps } from "./types";
 
 export function SetEditor({
@@ -14,6 +15,7 @@ export function SetEditor({
   onSave,
   onCancel,
 }: SetEditorProps) {
+  const id = useId();
   const increment =
     draft.unit === "kg"
       ? poundsToKilograms(exercise.weightIncrementLbs)
@@ -32,6 +34,9 @@ export function SetEditor({
       dirty: true,
     });
   }
+  function _stepReps(direction: number) {
+    onChange({ ...draft, reps: String(Math.max(0, Math.trunc(Number(draft.reps || 0)) + direction)), dirty: true });
+  }
   return (
     <Card className="v2-set-editor">
       <form
@@ -41,7 +46,7 @@ export function SetEditor({
         }}
       >
         <div className="v2-section-heading">
-          <h2>
+          <h2 tabIndex={-1} className="v2-set-editor-heading">
             {editing ? "Edit" : "Log"} set {position}
           </h2>
           <span className="v2-muted">
@@ -53,49 +58,24 @@ export function SetEditor({
           </span>
         </div>
         <fieldset disabled={disabled} className="v2-editor-fields">
-          <div className="v2-weight-field">
-            <Input
-              label={`Weight (${draft.unit})`}
-              type="number"
-              min="0"
-              step="any"
-              required
-              inputMode="decimal"
-              value={draft.weight}
-              onChange={(event) =>
-                onChange({ ...draft, weight: event.target.value, dirty: true })
-              }
-            />
-            <div className="v2-step-buttons">
-              <Button
-                variant="secondary"
-                aria-label={`Decrease weight by ${Number(increment.toFixed(2))} ${draft.unit}`}
-                onClick={() => _step(-1)}
-              >
-                −
-              </Button>
-              <Button
-                variant="secondary"
-                aria-label={`Increase weight by ${Number(increment.toFixed(2))} ${draft.unit}`}
-                onClick={() => _step(1)}
-              >
-                +
-              </Button>
+          <div className="v2-stepper-field">
+            <label htmlFor={`${id}-weight`}>Weight ({draft.unit})</label>
+            <div className="v2-inline-stepper">
+              <Button variant="quiet" aria-label={`Decrease weight by ${Number(increment.toFixed(2))} ${draft.unit}`} onClick={() => _step(-1)}>−</Button>
+              <input id={`${id}-weight`} type="number" min="0" step="any" required inputMode="decimal"
+                value={draft.weight} onChange={(event) => onChange({ ...draft, weight: event.target.value, dirty: true })} />
+              <Button variant="quiet" aria-label={`Increase weight by ${Number(increment.toFixed(2))} ${draft.unit}`} onClick={() => _step(1)}>+</Button>
             </div>
           </div>
-          <Input
-            label="Reps"
-            type="number"
-            min="0"
-            step="1"
-            required
-            inputMode="numeric"
-            placeholder={`${exercise.minReps}–${exercise.maxReps} target`}
-            value={draft.reps}
-            onChange={(event) =>
-              onChange({ ...draft, reps: event.target.value, dirty: true })
-            }
-          />
+          <div className="v2-stepper-field">
+            <label htmlFor={`${id}-reps`}>Reps</label>
+            <div className="v2-inline-stepper">
+              <Button variant="quiet" aria-label="Decrease reps by 1" onClick={() => _stepReps(-1)}>−</Button>
+              <input id={`${id}-reps`} type="number" min="0" step="1" required inputMode="numeric"
+                value={draft.reps} onChange={(event) => onChange({ ...draft, reps: event.target.value, dirty: true })} />
+              <Button variant="quiet" aria-label="Increase reps by 1" onClick={() => _stepReps(1)}>+</Button>
+            </div>
+          </div>
           <fieldset className="v2-rir-field">
             <legend>Reps left</legend>
             <p className="v2-muted">How many more clean reps could you do?</p>
