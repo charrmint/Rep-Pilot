@@ -18,6 +18,7 @@ import type {
 import type { WorkoutTemplateRow } from "../templates/types";
 
 export type WorkoutSessionRow = Tables<"workout_sessions">;
+export type LatestCompletedWorkoutSessionRow = Pick<WorkoutSessionRow, "id">;
 export type WorkoutSessionExerciseRow = Tables<"workout_session_exercises">;
 export type WorkoutSetRow = Tables<"workout_sets">;
 export type WorkoutSetInsert = TablesInsert<"workout_sets">;
