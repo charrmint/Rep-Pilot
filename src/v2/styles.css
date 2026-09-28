@@ -1131,20 +1131,8 @@
   }
 }
 
-.v2-stepper-field { display: grid; gap: 8px; min-width: 0; }
-.v2-stepper-field > label { font-size: 0.8rem; color: var(--v2-muted); }
-.v2-inline-stepper { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; border: 1px solid var(--v2-control-line); border-radius: 12px; background: var(--v2-surface); }
-.v2-inline-stepper input { width: 100%; min-width: 0; min-height: 48px; border: 0; background: transparent; color: var(--v2-text); text-align: center; font-size: 1rem; font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
-.v2-inline-stepper input::-webkit-inner-spin-button, .v2-inline-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
-.v2-inline-stepper .v2-button { padding: 0; min-width: 44px; font-size: 1.25rem; }
-.v2-inline-stepper .v2-button:hover { background: var(--v2-soft); }
-.v2-inline-stepper :focus-visible { outline-offset: 0; }
-.v2-set-editor-heading { scroll-margin-top: 100px; }
-.v2-set-editor .v2-section-heading { flex-wrap: wrap; }
-@media (max-width: 479px) {
-  .v2-set-editor .v2-editor-fields { grid-template-columns: minmax(0, 1fr); }
-}
-
+/* Workout controls and context stay scoped to the focused session. */
+.v2-workout-prescription { display: flex; flex-wrap: wrap; gap: 8px; }
 .v2-workout-context.v2-card { display: grid; gap: 16px; padding: 18px; }
 .v2-previous-summary { display: grid; gap: 8px; }
 @media (min-width: 640px) {
@@ -1160,6 +1148,41 @@
 .v2-context-suggestion .v2-eyebrow { margin-bottom: 0 !important; }
 .v2-context-suggestion > .v2-button { justify-self: start; }
 .v2-workout-context details > p + p { margin-top: 8px; }
+.v2-stepper-field { display: grid; gap: 8px; min-width: 0; }
+.v2-stepper-field > label { font-size: 0.8rem; color: var(--v2-muted); }
+.v2-inline-stepper { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; border: 1px solid var(--v2-control-line); border-radius: 12px; background: var(--v2-surface); }
+.v2-inline-stepper input { width: 100%; min-width: 0; min-height: 48px; border: 0; background: transparent; color: var(--v2-text); text-align: center; font-size: 1rem; font-variant-numeric: tabular-nums; appearance: textfield; -moz-appearance: textfield; }
+.v2-inline-stepper input::-webkit-inner-spin-button, .v2-inline-stepper input::-webkit-outer-spin-button { appearance: none; margin: 0; }
+.v2-inline-stepper .v2-button { padding: 0; min-width: 44px; font-size: 1.25rem; }
+.v2-inline-stepper .v2-button:hover { background: var(--v2-soft); }
+.v2-inline-stepper :focus-visible { outline-offset: 0; }
+.v2-set-editor-heading { scroll-margin-top: 100px; }
+.v2-set-editor .v2-section-heading { flex-wrap: wrap; }
+.v2-set-delete { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--v2-line); }
+.v2-set-delete .v2-delete-confirm { border: 0; padding: 0; }
+.v2-root .v2-danger-action { color: var(--v2-danger); }
+.v2-set-table-wrap { margin-top: 12px; border: 1px solid var(--v2-line); border-radius: var(--v2-radius-md); background: var(--v2-surface); padding: 4px; }
+.v2-set-table { color: var(--v2-text); width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.v2-set-table th, .v2-set-table td { text-align: left; padding: 8px 4px; overflow-wrap: anywhere; }
+.v2-set-table thead { color: var(--v2-muted); font-size: 0.75rem; }
+.v2-set-table th:first-child { width: 12%; }
+.v2-set-table th:nth-child(2) { width: 29%; }
+.v2-set-table th:nth-child(3), .v2-set-table th:nth-child(4) { width: 17%; }
+.v2-set-table th:last-child { width: 25%; }
+.v2-set-table tbody tr { border-top: 1px solid var(--v2-line); }
+.v2-set-table tr[aria-current="true"] { background: var(--v2-soft); }
+.v2-set-table .v2-button { padding: 4px; min-width: 44px; min-height: 44px; }
+.v2-next-exercise { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+.v2-next-exercise > div { flex: 1 1 220px; min-width: 0; }
+.v2-next-exercise .v2-muted { margin-top: 8px; font-size: 0.875rem; }
+.v2-workout-options { position: relative; }
+.v2-workout-options > summary { display: grid; place-items: center; width: 48px; min-height: 48px; border: 1px solid var(--v2-control-line); border-radius: 12px; list-style: none; }
+.v2-workout-options > summary::-webkit-details-marker { display: none; }
+.v2-workout-options-panel { position: absolute; right: 0; top: calc(100% + 8px); width: 200px; padding: 8px; border: 1px solid var(--v2-control-line); border-radius: 12px; background: var(--v2-surface); box-shadow: 0 12px 28px #0008; }
+.v2-workout-options-panel .v2-button { width: 100%; }
+@media (max-width: 479px) {
+  .v2-set-editor .v2-editor-fields { grid-template-columns: minmax(0, 1fr); }
+}
 
 @media (min-width: 640px) {
   .v2-workout-context:has(.v2-context-suggestion) { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }

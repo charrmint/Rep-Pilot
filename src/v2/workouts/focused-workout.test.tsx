@@ -165,7 +165,8 @@ describe("Focused workout", () => {
       screen.getByText(/Log at least one set with positive weight/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Keep working out" }));
-    fireEvent.click(screen.getByRole("button", { name: "Abandon" }));
+    fireEvent.click(screen.getByLabelText("Workout options"));
+    fireEvent.click(screen.getByRole("button", { name: "Abandon workout" }));
     vi.mocked(endV2Workout).mockResolvedValue({ ...data, status: "cancelled" });
     fireEvent.click(screen.getByRole("button", { name: "Confirm abandon" }));
     await screen.findByRole("heading", { name: "Workout abandoned" });
@@ -187,7 +188,9 @@ describe("Focused workout", () => {
     expect(
       screen.getByRole("button", { name: "Finish workout" }),
     ).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Abandon" })).toBeDisabled();
+    fireEvent.click(screen.getByLabelText("Workout options"));
+    expect(screen.getByRole("button", { name: "Abandon workout" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Increase reps by 1" })).toBeDisabled();
     await act(async () => resolve(savedSet));
     expect(endV2Workout).not.toHaveBeenCalled();
   });
@@ -475,15 +478,16 @@ describe("Focused workout", () => {
     _render([savedSet]);
     _reps("9");
     vi.mocked(deleteWorkoutSetAction).mockResolvedValue();
+    fireEvent.click(screen.getByRole("button", { name: "Edit set 1" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete set 1" }));
     expect(deleteWorkoutSetAction).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
     await waitFor(() =>
       expect(screen.getByText("0 of 4 planned sets")).toBeInTheDocument(),
     );
-    // The current set-2 editor is preserved; resuming after reload will fill set 1.
+    // Deletion returns to the missing planned position; the set-2 draft survives.
     expect(
-      screen.getByRole("heading", { name: "Log set 2" }),
+      screen.getByRole("heading", { name: "Log set 1" }),
     ).toBeInTheDocument();
   });
 
@@ -549,6 +553,31 @@ it("steps reps without submitting, clamps at zero, and keeps direct typing", () 
   expect(saveWorkoutSetAction).not.toHaveBeenCalled();
 });
 
+it("previews the next prescription and preserves drafts when using Next", () => {
+  _render();
+  expect(screen.getByText("2 sets · 8–10 reps · 100 lb")).toBeInTheDocument();
+  _reps("11");
+  fireEvent.click(screen.getByRole("button", { name: "Go to Cable Row" }));
+  expect(screen.getByRole("heading", { name: "Cable Row", level: 1 })).toBeInTheDocument();
+  expect(screen.queryByText("Up next")).not.toBeInTheDocument();
+  _switch("Bench Press");
+  expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(11);
+});
+
+it("shows saved units and RIR in columns and only offers deletion when editing", () => {
+  _render([{ ...savedSet, rir: 7, weightValue: 45, weightUnit: "kg" }]);
+  const table = screen.getByRole("table");
+  expect(within(table).getByRole("cell", { name: "45 kg" })).toBeInTheDocument();
+  expect(within(table).getByRole("cell", { name: "7" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Delete set 1" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Edit set 1" }));
+  fireEvent.click(screen.getByRole("button", { name: "Delete set 1" }));
+  expect(screen.getByRole("button", { name: "Keep set" })).toHaveFocus();
+  fireEvent.click(screen.getByRole("button", { name: "Keep set" }));
+  expect(screen.getByRole("button", { name: "Delete set 1" })).toHaveFocus();
+  expect(deleteWorkoutSetAction).not.toHaveBeenCalled();
+});
+
 it("keeps mixed previous units in the expanded context instead of combining loads", () => {
   _render([], { previousPerformance: {
     workoutSessionId: "previous", workoutSessionExerciseId: "previous-exercise",
@@ -568,4 +597,24 @@ it("summarizes equal previous loads with reps in saved position order", () => {
     sets: [{ ...savedSet, id: "second", position: 2, reps: 7 }, savedSet],
   } });
   expect(screen.getByText("100 lb · 8, 7 reps")).toBeInTheDocument();
+});
+
+it("closes workout options with Escape and restores trigger focus", () => {
+  _render();
+  const trigger = screen.getByLabelText("Workout options");
+  fireEvent.click(trigger);
+  const details = trigger.closest("details")!;
+  expect(details.open).toBe(true);
+  fireEvent.keyDown(screen.getByRole("button", { name: "Abandon workout" }), { key: "Escape" });
+  expect(details.open).toBe(false);
+  expect(trigger).toHaveFocus();
+});
+
+it("returns focus to workout options after cancelling abandonment", async () => {
+  _render();
+  const trigger = screen.getByLabelText("Workout options");
+  fireEvent.click(trigger);
+  fireEvent.click(screen.getByRole("button", { name: "Abandon workout" }));
+  fireEvent.click(screen.getByRole("button", { name: "Keep working out" }));
+  await waitFor(() => expect(trigger).toHaveFocus());
 });

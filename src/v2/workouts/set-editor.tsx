@@ -1,7 +1,7 @@
 "use client";
 
 import { poundsToKilograms } from "@/lib/units/weight";
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { Button, Card } from "../ui/primitives";
 import type { SetEditorProps } from "./types";
 
@@ -14,8 +14,20 @@ export function SetEditor({
   onChange,
   onSave,
   onCancel,
+  onDelete,
+  onConfirmDelete,
+  onCancelDelete,
+  confirmingDelete = false,
 }: SetEditorProps) {
   const id = useId();
+  const deleteSection = useRef<HTMLDivElement>(null);
+  const wasConfirming = useRef(false);
+  useEffect(() => {
+    if (confirmingDelete || wasConfirming.current) {
+      deleteSection.current?.querySelector<HTMLButtonElement>(confirmingDelete ? ".v2-keep-set" : ".v2-danger-action")?.focus();
+    }
+    wasConfirming.current = confirmingDelete;
+  }, [confirmingDelete]);
   const increment =
     draft.unit === "kg"
       ? poundsToKilograms(exercise.weightIncrementLbs)
@@ -115,6 +127,21 @@ export function SetEditor({
           )}
         </div>
       </form>
+      {editing && onDelete && (
+        <div ref={deleteSection} className="v2-set-delete">
+          {confirmingDelete ? (
+            <div className="v2-delete-confirm" role="group" aria-label={`Delete set ${position}?`}>
+              <p>Delete set {position}? This also discards any unsaved edits to this set.</p>
+              <div className="v2-actions">
+                <Button variant="secondary" disabled={disabled} onClick={onConfirmDelete}>Confirm delete</Button>
+                <Button variant="quiet" className="v2-keep-set" disabled={disabled} onClick={onCancelDelete}>Keep set</Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="quiet" className="v2-danger-action" disabled={disabled} onClick={onDelete}>Delete set {position}</Button>
+          )}
+        </div>
+      )}
     </Card>
   );
 }

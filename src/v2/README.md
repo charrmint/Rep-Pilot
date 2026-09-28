@@ -67,7 +67,13 @@ allowing a retry. If that read also fails, mutation controls remain locked until
 “Check saved sets” succeeds. Draft values are retained for review; a set found at
 the draft's position is updated by its persisted ID instead of inserted again.
 
-Weight steppers use the session's configured increment and existing unit helpers.
+Weight and reps use inline decrement/input/increment controls. Weight steppers use
+the session's configured increment and existing unit helpers; reps change by one.
+Previous performance starts with a compact summary, with individual saved sets
+and recommendation explanations available through disclosures. Mixed weights or
+units remain explicit. Logged sets use aligned columns, with deletion available
+when editing a saved set and confirmed before removal. Workout options contain
+Abandon; the next-exercise card previews the session's saved prescription.
 RIR uses 0, 1, 2, 3+, and Skip buttons, defaulting to Skip. The 3+ option
 stores 3, matching the existing top option; Skip stores null. Existing saved
 values above 3 are preserved unless the effort selection is changed. Suggestions apply only to the
