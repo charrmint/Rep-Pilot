@@ -48,7 +48,7 @@ export async function TodayScreen() {
             </Suspense>
           </section>
           <section aria-labelledby="today-insights-heading">
-            <div className="v2-section-heading">
+            <div className="v2-section-heading v2-today-insights-heading">
               <div>
                 <p className="v2-eyebrow">Your progress</p>
                 <h2 id="today-insights-heading">Build on your last session.</h2>
