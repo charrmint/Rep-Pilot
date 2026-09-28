@@ -50,3 +50,9 @@ export interface WorkoutConfirmationProps {
 export interface WorkoutResultsProps {
   workout: WorkoutSession;
 }
+
+export interface ExerciseContextProps {
+  exercise: WorkoutSessionExercise;
+  disabled: boolean;
+  onApply: (weight: string) => void;
+}

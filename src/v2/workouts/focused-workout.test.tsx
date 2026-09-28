@@ -548,3 +548,24 @@ it("steps reps without submitting, clamps at zero, and keeps direct typing", () 
   expect(screen.getByRole("spinbutton", { name: "Reps" })).toHaveValue(13);
   expect(saveWorkoutSetAction).not.toHaveBeenCalled();
 });
+
+it("keeps mixed previous units in the expanded context instead of combining loads", () => {
+  _render([], { previousPerformance: {
+    workoutSessionId: "previous", workoutSessionExerciseId: "previous-exercise",
+    startedAt: "2026-09-23T12:00:00Z", targetSets: 2, recommendation: null,
+    sets: [savedSet, { ...savedSet, id: "kg", position: 2, weightValue: 45, weightUnit: "kg", rir: 2 }],
+  } });
+  expect(screen.getByText("2 saved sets · varied weights or units")).toBeInTheDocument();
+  fireEvent.click(screen.getByText("View previous sets (2)"));
+  expect(screen.getByText("Set 1: 100 lb × 8")).toBeVisible();
+  expect(screen.getByText("Set 2: 45 kg × 8 · 2 RIR")).toBeVisible();
+});
+
+it("summarizes equal previous loads with reps in saved position order", () => {
+  _render([], { previousPerformance: {
+    workoutSessionId: "previous", workoutSessionExerciseId: "previous-exercise",
+    startedAt: "2026-09-23T12:00:00Z", targetSets: 2, recommendation: null,
+    sets: [{ ...savedSet, id: "second", position: 2, reps: 7 }, savedSet],
+  } });
+  expect(screen.getByText("100 lb · 8, 7 reps")).toBeInTheDocument();
+});
