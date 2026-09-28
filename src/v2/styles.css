@@ -1155,3 +1155,14 @@
     margin-left: auto;
   }
 }
+
+.v2-plan-name-form, .v2-plan-overview {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.v2-plan-name-form .v2-muted { font-size: 0.875rem; }
+.v2-plan-saved { color: var(--v2-success); }
+.v2-plan-exercise-preview { margin: 0; padding-left: 24px; }
+.v2-plan-exercise-preview li { padding: 12px 0; border-bottom: 1px solid var(--v2-line); }
+.v2-plan-exercise-preview li > span { display: block; overflow-wrap: anywhere; }
