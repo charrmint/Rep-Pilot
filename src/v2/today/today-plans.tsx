@@ -54,11 +54,6 @@ export async function NextWorkout({ plans }: NextWorkoutProps) {
           </ButtonLink>
         )}
       </div>
-      {!ready && (
-        <p className="v2-classic-note">
-          Exercise editing opens in the classic app.
-        </p>
-      )}
     </Card>
   );
 }

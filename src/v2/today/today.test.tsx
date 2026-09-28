@@ -67,7 +67,6 @@ describe("Today next action", () => {
     render(await NextWorkout({ plans: _plans(_library()) }));
     expect(screen.getByRole("link", { name: "Create a plan" })).toHaveAttribute("href", "/v2/library/plans/new");
     expect(screen.queryByRole("link", { name: "Choose a workout" })).not.toBeInTheDocument();
-    expect(screen.getByText(/Exercise editing opens in the classic app/)).toBeInTheDocument();
   });
   it("offers setup for active plans without exercises", async () => {
     render(await NextWorkout({ plans: _plans(_library([{ ..._plan("a"), exercises: [] }])) }));

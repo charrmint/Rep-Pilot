@@ -2,14 +2,18 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { getV2Context } from "../server/context";
 import { getWorkoutTemplateDetails } from "@/features/templates/template-service";
+import { listAvailableExercises } from "@/features/exercises/exercise-service";
 import { NewPlanScreen, PlanScreen } from "./plan-screen";
 vi.mock("../server/context", () => ({ getV2Context: vi.fn() }));
 vi.mock("@/features/templates/template-service", () => ({ getWorkoutTemplateDetails: vi.fn() }));
+vi.mock("@/features/exercises/exercise-service", () => ({ listAvailableExercises: vi.fn() }));
+vi.mock("./exercise-actions", () => ({ mutateV2PlanExercise: vi.fn(), reloadV2Plan: vi.fn() }));
 vi.mock("./actions", () => ({ createV2Plan: vi.fn(), renameV2Plan: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh() {}, replace() {} }), unstable_rethrow: vi.fn(), notFound: () => { throw new Error("not-found"); }, redirect: (url: string) => { throw new Error(`redirect:${url}`); } }));
 afterEach(cleanup);
 beforeEach(() => {
   vi.resetAllMocks();
+  vi.mocked(listAvailableExercises).mockResolvedValue([{ id: "bench", name: "Bench", isArchived: false, isSystemExercise: true }]);
   vi.mocked(getV2Context).mockResolvedValue({ user: { id: "owner" } as NonNullable<Awaited<ReturnType<typeof getV2Context>>["user"]>, activeWorkout: null, activeWorkoutUnavailable: true });
   vi.mocked(getWorkoutTemplateDetails).mockResolvedValue({ id: "plan", name: "Upper", isArchived: false, createdAt: "2026-09-27", updatedAt: "2026-09-27", exercises: [] });
 });
@@ -18,7 +22,8 @@ it("opens an owned empty plan even when workout status is unavailable", async ()
   expect(getWorkoutTemplateDetails).toHaveBeenCalledWith({ userId: "owner", templateId: "plan" });
   expect(screen.getByRole("heading", { name: "Upper" })).toBeInTheDocument();
   expect(screen.getByText(/No exercises yet/)).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Add exercises in classic" })).toHaveAttribute("href", "/templates/plan/edit");
+  expect(screen.getByRole("form", { name: "Add exercise" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Add exercises in classic" })).not.toBeInTheDocument();
 });
 it("does not render an unavailable or another owner's plan", async () => {
   vi.mocked(getWorkoutTemplateDetails).mockResolvedValue(null);

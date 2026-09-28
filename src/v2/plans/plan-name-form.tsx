@@ -1,13 +1,13 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, unstable_rethrow } from "next/navigation";
 import { Button, Input } from "../ui/primitives";
 import { useLeaveWarning } from "../workouts/use-leave-warning";
 import { createV2Plan, renameV2Plan } from "./actions";
 import type { PlanNameFormProps } from "./types";
 
-export function PlanNameForm({ plan }: PlanNameFormProps) {
+export function PlanNameForm({ plan, disabled = false, onActivityChange }: PlanNameFormProps) {
   const router = useRouter();
   const lock = useRef(false);
   const [name, setName] = useState(plan?.name ?? "");
@@ -16,14 +16,16 @@ export function PlanNameForm({ plan }: PlanNameFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const dirty = name !== savedName;
-  useLeaveWarning(dirty, pending, "Leave this plan? Your unsaved name will be lost.");
+  useEffect(() => { onActivityChange?.(dirty, pending); }, [dirty, pending, onActivityChange]);
+  useLeaveWarning(!onActivityChange && dirty, !onActivityChange && pending, "Leave this plan? Your unsaved name will be lost.");
 
   async function _submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (lock.current) return;
+    if (lock.current || disabled) return;
     const data = new FormData(event.currentTarget);
     lock.current = true;
     setPending(true);
+    onActivityChange?.(dirty, true);
     setError(null);
     setSaved(false);
     let navigating = false;
@@ -58,15 +60,15 @@ export function PlanNameForm({ plan }: PlanNameFormProps) {
     <form onSubmit={_submit} className="v2-plan-name-form" aria-label={plan ? "Rename plan" : "Create plan"} aria-busy={pending}>
       {plan && <input type="hidden" name="templateId" value={plan.id} />}
       <Input id="plan-name" label="Plan name" name="name" value={name} required maxLength={80}
-        disabled={pending} autoComplete="off" placeholder="e.g. Upper body"
+        disabled={pending || disabled} autoComplete="off" placeholder="e.g. Upper body"
         aria-describedby={error ? "plan-name-help plan-name-error" : "plan-name-help"}
         onChange={(event) => { setName(event.target.value); setError(null); setSaved(false); }} />
       <p id="plan-name-help" className="v2-muted">Choose a name you’ll recognize in your library. Up to 80 characters.</p>
       <div className="v2-actions">
-        <Button type="submit" disabled={pending || (Boolean(plan) && !dirty)}>
+        <Button type="submit" disabled={pending || disabled || (Boolean(plan) && !dirty)}>
           {pending ? (plan ? "Saving…" : "Creating…") : (plan ? "Save name" : "Create plan")}
         </Button>
-        {plan && dirty && <Button variant="quiet" disabled={pending} onClick={() => { setName(savedName); setError(null); setSaved(false); }}>Discard changes</Button>}
+        {plan && dirty && <Button variant="quiet" disabled={pending || disabled} onClick={() => { setName(savedName); setError(null); setSaved(false); }}>Discard changes</Button>}
       </div>
       {error && <p id="plan-name-error" className="v2-error" role="alert">{error}</p>}
       {saved && <p className="v2-plan-saved" role="status">Plan name saved.</p>}

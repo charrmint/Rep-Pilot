@@ -22,7 +22,7 @@ Client modules receive presentation data, never a database client or credential.
 | `/v2`                      | Training entry screen and resume action                  |
 | `/v2/library`              | Search active/archived plans and inspect their exercises |
 | `/v2/library/plans/new` | Create a plan |
-| `/v2/library/plans/[templateId]` | Rename a plan and preview exercises |
+| `/v2/library/plans/[templateId]` | Rename a plan and configure its exercises |
 | `/v2/library/exercises`    | Search active/archived exercises and open history        |
 | `/v2/history`              | Entry points to session, plan, and exercise history      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
@@ -35,7 +35,7 @@ its ID and exercises. Saves refresh v2 and related classic views. Failed saves
 retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
-Exercise editing, archive management, exercise management, and history browsing
+Archive management, exercise management, and history browsing
 currently open the existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
@@ -51,6 +51,35 @@ Below 980px, navigation sits at the bottom with a compact header. Wider layouts
 use a 248px sidebar. Content remains centered and bounded, and cards use two
 columns where space permits. Library archives are a filter, not a separate
 account setting.
+
+## Plan exercise editing
+
+Plan pages add, remove, reorder, and configure exercises in v2. The searchable exercise picker displays matching results as you type, with
+arrow-key navigation, Enter to select, Escape to dismiss, and a clear action.
+Typing again clears the previous selection so only an explicitly chosen exercise
+can be added. The picker includes active built-in and custom exercises and excludes exercises
+already configured in the plan. Existing archived references remain editable.
+Each exercise saves separately through the shared template services; there is
+no whole-plan transaction. Removing an exercise requires confirmation and does
+not delete its history or change existing workout snapshots.
+
+Configuration retains sets, rep ranges, entered weight/unit, and increments in
+pounds. Changing the unit keeps the entered number, matching the classic editor;
+it does not convert the load. Existing unit normalization remains authoritative.
+RIR is recorded on workout sets, not configured on plans.
+
+Exercise drafts are keyed by template-exercise ID and survive other saves,
+reordering, and name refreshes. The name and exercise forms share a leave warning
+and block competing saves while a request is pending. Drafts are in memory;
+refresh/close warns, and browser history navigation is not intercepted.
+
+After mutation failures, the editor reloads persisted plan state and preserves
+remaining drafts. If that read fails, mutations stay locked until “Check saved
+plan” succeeds. A recovered add is removed from the picker, preventing an
+accidental repeat. Existing reorder/removal services use multiple writes: a
+failed operation can leave a partially changed order, which is shown after the
+reload for review before another action. Successful changes refresh Library,
+Today, and classic plan views. New settings apply to future sessions only.
 
 ## Focused workout behavior
 
