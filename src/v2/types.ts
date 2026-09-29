@@ -4,7 +4,7 @@ import type {
   ReactNode,
 } from "react";
 import type { ActiveWorkoutSummary } from "@/features/workouts/types";
-import type { ExerciseLibrary } from "@/features/exercises/types";
+import type { Exercise, ExerciseLibrary } from "@/features/exercises/types";
 import type { WorkoutTemplateLibrary } from "@/features/templates/types";
 
 export type IconName =
@@ -52,6 +52,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 export interface LibraryBrowserProps {
   view: LibraryView;
+  exerciseActions?: (exercise: Exercise) => ReactNode;
   plans?: WorkoutTemplateLibrary;
   exercises?: ExerciseLibrary;
   activeWorkout?: ActiveWorkoutSummary | null;

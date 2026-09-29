@@ -9,6 +9,7 @@ import { Icon } from "../ui/icon";
 
 export function LibraryBrowser({
   view,
+  exerciseActions,
   plans,
   exercises,
   activeWorkout = null,
@@ -95,7 +96,7 @@ export function LibraryBrowser({
             </Button>
           ) : (
             !archived && (
-              <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "/exercises"}>
+              <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "#create-exercise"}>
                 Create {view === "plans" ? "a plan" : "an exercise"}
               </ButtonLink>
             )
@@ -126,7 +127,7 @@ export function LibraryBrowser({
                   {plan.exercises.length ? (
                     <ol>
                       {plan.exercises.map((exercise) => (
-                        <li key={exercise.id}>
+                        <li key={exercise.id} className={exerciseActions ? "v2-managed-exercise" : undefined}>
                           <span>{exercise.exerciseName}</span>
                           <span>
                             {exercise.config.targetSets} ×{" "}
@@ -173,7 +174,7 @@ export function LibraryBrowser({
       ) : (
         <ul className="v2-exercise-list">
           {visibleExercises.map((exercise) => (
-            <li key={exercise.id}>
+            <li key={exercise.id} className={exerciseActions ? "v2-managed-exercise" : undefined}>
               <span className="v2-tile-icon">
                 <Icon name="dumbbell" />
               </span>
@@ -193,6 +194,7 @@ export function LibraryBrowser({
               >
                 History <Icon name="arrow" />
               </Link>
+              {exerciseActions?.(exercise)}
             </li>
           ))}
         </ul>

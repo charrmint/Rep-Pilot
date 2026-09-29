@@ -1189,6 +1189,32 @@
   .v2-context-suggestion { border-top: 0; border-left: 1px solid var(--v2-line); padding: 0 0 0 16px; }
 }
 
+/* Exercise management preserves the compact library row until actions expand. */
+.v2-exercise-list > li.v2-managed-exercise {
+  flex-wrap: wrap;
+}
+.v2-exercise-management {
+  flex-basis: 100%;
+  min-width: 0;
+}
+.v2-exercise-assignment {
+  flex: 1;
+  min-width: 0;
+}
+.v2-exercise-assignment > summary {
+  width: fit-content;
+  cursor: pointer;
+}
+.v2-exercise-assignment[open] {
+  flex-basis: 100%;
+}
+.v2-exercise-assignment form {
+  margin-top: 16px;
+}
+#create-exercise {
+  scroll-margin-top: 100px;
+}
+
 .v2-search-picker {
   display: grid;
   gap: 8px;

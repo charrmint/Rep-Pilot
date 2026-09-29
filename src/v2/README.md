@@ -23,7 +23,7 @@ Client modules receive presentation data, never a database client or credential.
 | `/v2/library`              | Search active/archived plans and inspect their exercises |
 | `/v2/library/plans/new` | Create a plan |
 | `/v2/library/plans/[templateId]` | Rename a plan and configure its exercises |
-| `/v2/library/exercises`    | Search active/archived exercises and open history        |
+| `/v2/library/exercises`    | Create, archive, restore, and add exercises to plans        |
 | `/v2/history`              | Entry points to session, plan, and exercise history      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
 | `/v2/workouts/[sessionId]` | Workout logging, completion, and read-only results       |
@@ -35,8 +35,7 @@ its ID and exercises. Saves refresh v2 and related classic views. Failed saves
 retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
-Exercise management and history browsing
-currently open the existing routes. Login and demo entry also use the existing routes and keep their
+History browsing currently opens the existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
 ## Design foundations
@@ -196,3 +195,25 @@ v2 navigation and invalidate the related classic workout/history views.
 Keep new view contracts in module-local `types.ts`; reuse existing feature types
 for domain objects. Future mutations should call shared actions or services and
 refresh the relevant v2 routes as well as existing destinations.
+
+## Exercise management
+
+Library’s Exercises tab supports custom exercise creation, archive/restore, and
+adding active exercises to active plans. Built-in exercises cannot be archived.
+Creation reuses name validation and duplicate checks, including archived names.
+Archiving hides a custom exercise from pickers without changing existing plan
+entries or workout history. Restoring returns it to the active library.
+
+An expandable “Add to plan” form uses the same searchable picker as exercise
+selection in the plan editor. It lists only active plans that do not already
+contain the exercise. Focus shows choices, typing filters them, and an explicit
+selection is required before submitting. Assignments use the existing default prescription: 3 sets
+of 8–12 reps, 0 lb, and a 5 lb increment. A success link opens the plan editor
+for adjustment. History links continue to use the existing history routes.
+
+Mutations share a pending lock and reload the saved library and eligible plans.
+If verification fails, changes remain disabled until “Check saved library”
+succeeds. Failed creation preserves the entered name. Unsaved names use the
+same app-link and browser-unload warning as plan forms; browser history
+navigation is not intercepted. The forms and row actions extend the mock-up’s
+Library placeholder using existing v2 tokens and controls.

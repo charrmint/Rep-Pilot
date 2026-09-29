@@ -6,12 +6,13 @@ import type { LibraryView } from "../types";
 import { ButtonLink, PageHeader } from "../ui/primitives";
 import { Icon } from "../ui/icon";
 import { SignInCard } from "../ui/sign-in-card";
+import { ExerciseManager } from "../exercises/exercise-manager";
 import { LibraryBrowser } from "./library-browser";
 
 export async function LibraryScreen({ view }: { view: LibraryView }) {
   const { user, activeWorkout, activeWorkoutUnavailable } = await getV2Context();
   const plans =
-    user && view === "plans"
+    user
       ? await listWorkoutTemplateLibrary(user.id)
       : undefined;
   const exercises =
@@ -24,9 +25,9 @@ export async function LibraryScreen({ view }: { view: LibraryView }) {
         description="Your plans and exercises. Ready for the next session."
         action={
           user ? (
-            <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "/exercises"}>
+            <ButtonLink href={view === "plans" ? "/v2/library/plans/new" : "#create-exercise"}>
               <Icon name="plus" />
-              {view === "plans" ? "Create a plan" : "Manage exercises"}
+              {view === "plans" ? "Create a plan" : "Create exercise"}
             </ButtonLink>
           ) : undefined
         }
@@ -45,7 +46,9 @@ export async function LibraryScreen({ view }: { view: LibraryView }) {
           Exercises
         </Link>
       </nav>
-      {user ? (
+      {user && view === "exercises" && exercises && plans ? (
+        <ExerciseManager initialData={{ exercises, plans: plans.activeTemplates }} />
+      ) : user ? (
         <LibraryBrowser
           key={view}
           view={view}
