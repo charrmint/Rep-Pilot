@@ -9,9 +9,10 @@ import { useLeaveWarning } from "../workouts/use-leave-warning";
 import { PlanNameForm } from "./plan-name-form";
 import { ExercisePicker } from "./exercise-picker";
 import { PlanConfigFields } from "./plan-config-fields";
+import { mutateV2PlanArchive } from "./archive-actions";
 import { mutateV2PlanExercise, reloadV2Plan } from "./exercise-actions";
 import { sameExerciseDraft, toExerciseDraft } from "./exercise-drafts";
-import type { PlanEditorData, PlanExerciseDraft, PlanExerciseIntent } from "./types";
+import type { PlanEditorData, PlanExerciseDraft, PlanMutationIntent } from "./types";
 
 const EMPTY_ADD_DRAFT = toExerciseDraft(DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG);
 
@@ -23,6 +24,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
   const [addDraft, setAddDraft] = useState(EMPTY_ADD_DRAFT);
   const [selectedId, setSelectedId] = useState("");
   const [query, setQuery] = useState("");
+  const [archiveFeedback, setArchiveFeedback] = useState(false);
   const [pending, setPending] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,8 +80,14 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
     } finally { lock.current = false; setPending(false); }
   }
 
-  async function _mutate(intent: PlanExerciseIntent, formData: FormData, id?: string) {
+  async function _mutate(intent: PlanMutationIntent, formData: FormData, id?: string) {
     if (lock.current || namePending.current || unavailable) return;
+    const changingArchive = intent === "archive" || intent === "restore";
+    if (changingArchive && dirty) return;
+    if (intent === "archive" && !window.confirm(
+      "Archive this plan? It will be hidden from new workout starts. Your active workout and history stay unchanged. You can restore it from Library’s Archived filter.",
+    )) return;
+    setArchiveFeedback(changingArchive);
     if (intent === "remove" && !window.confirm(
       `Remove ${data.plan.exercises.find((exercise) => exercise.id === id)?.exerciseName} from this plan?${id && drafts[id] ? " Its unsaved edits will be discarded." : ""} Past workouts stay unchanged.`,
     )) return;
@@ -88,7 +96,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
     formData.set("intent", intent);
     if (id) formData.set("templateExerciseId", id);
     try {
-      const result = await mutateV2PlanExercise(formData);
+      const result = await (changingArchive ? mutateV2PlanArchive(formData) : mutateV2PlanExercise(formData));
       if (result.data) {
         _apply(result.data, result.status === "success" && intent === "save" ? id : undefined);
         router.refresh();
@@ -105,12 +113,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
     } finally { lock.current = false; setPending(false); }
   }
 
-  return (
-    <>
-      <Card><PlanNameForm plan={initialData.plan} disabled={pending || unavailable} onActivityChange={_nameActivity} /></Card>
-      <section className="v2-plan-editor" aria-labelledby="plan-exercises-heading" aria-busy={pending}>
-        <div className="v2-section-heading"><h2 id="plan-exercises-heading">Exercises</h2><span className="v2-muted">{data.plan.exercises.length} total</span></div>
-        <p className="v2-muted">Save each exercise when it’s ready. Changes apply to future workouts; active and past workouts keep their saved settings.</p>
+  const feedback = <>
         {error && <p className="v2-error" role="alert">{error}</p>}
         {message && <p className="v2-plan-saved" role="status">{message}</p>}
         {pending && <p role="status">Updating plan…</p>}
@@ -118,6 +121,15 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
           <p>Check the saved plan to continue. Your unsaved edits are kept on this page.</p>
           <Button disabled={busy} onClick={_recover}>Check saved plan</Button>
         </Card>}
+  </>;
+
+  return (
+    <>
+      <Card><PlanNameForm plan={initialData.plan} disabled={pending || unavailable} onActivityChange={_nameActivity} /></Card>
+      <section className="v2-plan-editor" aria-labelledby="plan-exercises-heading" aria-busy={pending}>
+        <div className="v2-section-heading"><h2 id="plan-exercises-heading">Exercises</h2><span className="v2-muted">{data.plan.exercises.length} total</span></div>
+        <p className="v2-muted">Save each exercise when it’s ready. Changes apply to future workouts; active and past workouts keep their saved settings.</p>
+        {!archiveFeedback && feedback}
         {data.plan.exercises.length === 0 && <Card><p>No exercises yet. Add your first exercise below.</p></Card>}
         <ol className="v2-plan-editor-list">
           {data.plan.exercises.map((exercise, index) => (
@@ -170,6 +182,27 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
           <Link className="v2-text-link" href="/exercises">Manage exercises in classic</Link>
         </Card>
       </section>
+      <Card className="v2-plan-overview">
+        <h2>{archiveFeedback && unavailable ? "Plan status unavailable" : data.plan.isArchived ? "Archived plan" : "Archive plan"}</h2>
+        <p className="v2-muted">
+          {archiveFeedback && unavailable
+            ? "We couldn’t verify whether this plan is archived. Check the saved plan before making another change."
+            : data.plan.isArchived
+            ? "This plan is hidden from new workout starts. Restore it to return it to your active plans."
+            : "Keep this plan and its history, but hide it from new workout starts. You can restore it later from Library’s Archived filter."}
+          {" "}Active workouts and past results stay unchanged.
+        </p>
+        {dirty && <p id="plan-archive-drafts" className="v2-muted">Save or discard your name and exercise edits before archiving or restoring this plan.</p>}
+        <div className="v2-actions">
+          <Button variant="secondary" disabled={disabled || dirty}
+            aria-describedby={dirty ? "plan-archive-drafts" : undefined}
+            onClick={() => _mutate(data.plan.isArchived ? "restore" : "archive", new FormData())}>
+            {archiveFeedback && pending ? "Checking plan…" : data.plan.isArchived ? "Restore plan" : "Archive plan"}
+          </Button>
+          <Link className="v2-text-link" href="/v2/library">Back to library</Link>
+        </div>
+        {archiveFeedback && feedback}
+      </Card>
     </>
   );
 }

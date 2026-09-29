@@ -7,6 +7,7 @@ import { NewPlanScreen, PlanScreen } from "./plan-screen";
 vi.mock("../server/context", () => ({ getV2Context: vi.fn() }));
 vi.mock("@/features/templates/template-service", () => ({ getWorkoutTemplateDetails: vi.fn() }));
 vi.mock("@/features/exercises/exercise-service", () => ({ listAvailableExercises: vi.fn() }));
+vi.mock("./archive-actions", () => ({ mutateV2PlanArchive: vi.fn() }));
 vi.mock("./exercise-actions", () => ({ mutateV2PlanExercise: vi.fn(), reloadV2Plan: vi.fn() }));
 vi.mock("./actions", () => ({ createV2Plan: vi.fn(), renameV2Plan: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh() {}, replace() {} }), unstable_rethrow: vi.fn(), notFound: () => { throw new Error("not-found"); }, redirect: (url: string) => { throw new Error(`redirect:${url}`); } }));
@@ -35,10 +36,11 @@ it("requires authentication before plan reads and creation UI", async () => {
   await expect(NewPlanScreen()).rejects.toThrow("redirect:/login");
   expect(getWorkoutTemplateDetails).not.toHaveBeenCalled();
 });
-it("shows an archived plan and its restore handoff", async () => {
+it("shows an archived plan with a v2 restore action", async () => {
   const plan = await getWorkoutTemplateDetails({ userId: "owner", templateId: "plan" });
   vi.mocked(getWorkoutTemplateDetails).mockResolvedValue({ ...plan!, isArchived: true });
   render(await PlanScreen({ templateId: "plan" }));
   expect(screen.getByText("Library · Archived plan")).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Restore this plan in classic" })).toHaveAttribute("href", "/templates");
+  expect(screen.getByRole("button", { name: "Restore plan" })).toBeEnabled();
+  expect(screen.queryByRole("link", { name: "Restore this plan in classic" })).not.toBeInTheDocument();
 });

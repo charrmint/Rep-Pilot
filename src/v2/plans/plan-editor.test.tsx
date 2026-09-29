@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { mutateV2PlanArchive } from "./archive-actions";
 import { PlanEditor } from "./plan-editor";
 import { mutateV2PlanExercise, reloadV2Plan } from "./exercise-actions";
 import { renameV2Plan } from "./actions";
@@ -7,6 +8,7 @@ import type { PlanEditorData, PlanMutationResult } from "./types";
 
 const router = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router, unstable_rethrow: vi.fn() }));
+vi.mock("./archive-actions", () => ({ mutateV2PlanArchive: vi.fn() }));
 vi.mock("./exercise-actions", () => ({ mutateV2PlanExercise: vi.fn(), reloadV2Plan: vi.fn() }));
 vi.mock("./actions", () => ({ renameV2Plan: vi.fn(), createV2Plan: vi.fn() }));
 const config = { targetSets: 3, minReps: 8, maxReps: 12, defaultWeightValue: 20, defaultWeightUnit: "kg" as const, defaultNormalizedWeightLbs: 44, weightIncrementLbs: 5 };
@@ -200,4 +202,79 @@ it("blocks exercise submissions while a name save is in flight", async () => {
   expect(screen.getByRole("button", { name: "Move Cable row up" })).toBeDisabled();
   await act(async () => finish({ status: "success", plan: { id: "plan", name: "Renamed" } }));
   expect(screen.getByRole("button", { name: "Move Cable row up" })).toBeEnabled();
+});
+
+it("confirms archive, keeps the plan mounted, and restores it within v2", async () => {
+  const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
+  const archived = { ...base, plan: { ...base.plan, isArchived: true } };
+  vi.mocked(mutateV2PlanArchive).mockResolvedValueOnce({ status: "success", data: archived, message: "Plan archived." }).mockResolvedValueOnce({ status: "success", data: base, message: "Plan restored." });
+  render(<PlanEditor initialData={base} />);
+  fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
+  expect(mutateV2PlanArchive).not.toHaveBeenCalled();
+  fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
+  await screen.findByText("Plan archived.");
+  expect(screen.getByRole("heading", { name: "Archived plan" })).toBeInTheDocument();
+  expect(_sets("Bench press")).toHaveValue(3);
+  expect(Object.fromEntries(vi.mocked(mutateV2PlanArchive).mock.calls[0][0])).toMatchObject({ intent: "archive", templateId: "plan" });
+  fireEvent.click(screen.getByRole("button", { name: "Restore plan" }));
+  await screen.findByText("Plan restored.");
+  expect(screen.getByRole("button", { name: "Archive plan" })).toBeEnabled();
+  expect(Object.fromEntries(vi.mocked(mutateV2PlanArchive).mock.calls[1][0])).toMatchObject({ intent: "restore", templateId: "plan" });
+  expect(confirm).toHaveBeenCalledTimes(2);
+  expect(router.refresh).toHaveBeenCalledTimes(2);
+});
+it("requires name, exercise, and new-exercise drafts to be resolved before archiving", () => {
+  render(<PlanEditor initialData={base} />);
+  const archive = screen.getByRole("button", { name: "Archive plan" });
+  fireEvent.change(screen.getByLabelText("Plan name"), { target: { value: "New name" } });
+  expect(archive).toBeDisabled();
+  expect(screen.getByText(/Save or discard your name and exercise edits/)).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Discard changes" }));
+  expect(archive).toBeEnabled();
+  fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
+  expect(archive).toBeDisabled();
+  fireEvent.click(within(_form("Configure Bench press")).getByRole("button", { name: "Discard edits" }));
+  _chooseExercise("Squat");
+  expect(archive).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Discard new exercise" }));
+  expect(archive).toBeEnabled();
+  expect(mutateV2PlanArchive).not.toHaveBeenCalled();
+});
+it("locks competing mutations during archive and reports errors beside the control", async () => {
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  let finish!: (result: PlanMutationResult) => void;
+  vi.mocked(mutateV2PlanArchive).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  render(<PlanEditor initialData={base} />);
+  fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
+  expect(screen.getByRole("button", { name: "Checking plan…" })).toBeDisabled();
+  expect(screen.getByLabelText("Plan name")).toBeDisabled();
+  expect(_sets("Bench press")).toBeDisabled();
+  fireEvent.submit(_form("Configure Bench press"));
+  expect(mutateV2PlanExercise).not.toHaveBeenCalled();
+  await act(async () => finish({ status: "error", data: base, message: "Archive failed. Try again." }));
+  const card = screen.getByRole("heading", { name: "Archive plan" }).closest("section")!;
+  expect(within(card).getByRole("alert")).toHaveTextContent("Archive failed");
+  expect(screen.getByRole("button", { name: "Archive plan" })).toBeEnabled();
+});
+it("recovers persisted archive status after a lost response before offering another action", async () => {
+  vi.spyOn(window, "confirm").mockReturnValue(true);
+  vi.mocked(mutateV2PlanArchive).mockRejectedValue(new Error("response lost"));
+  vi.mocked(reloadV2Plan).mockResolvedValue({ ...base, plan: { ...base.plan, isArchived: true } });
+  render(<PlanEditor initialData={base} />);
+  fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
+  await screen.findByRole("button", { name: "Restore plan" });
+  expect(mutateV2PlanArchive).toHaveBeenCalledOnce();
+  expect(reloadV2Plan).toHaveBeenCalledOnce();
+});
+it("requires recovery after an unverified restore and shows the recovered active status", async () => {
+  vi.mocked(mutateV2PlanArchive).mockResolvedValue({ status: "error", data: null, message: "Status could not be verified." });
+  vi.mocked(reloadV2Plan).mockResolvedValue(base);
+  render(<PlanEditor initialData={{ ...base, plan: { ...base.plan, isArchived: true } }} />);
+  fireEvent.click(screen.getByRole("button", { name: "Restore plan" }));
+  const check = await screen.findByRole("button", { name: "Check saved plan" });
+  expect(_sets("Bench press")).toBeDisabled();
+  expect(screen.getByRole("heading", { name: "Plan status unavailable" })).toBeInTheDocument();
+  expect(router.refresh).not.toHaveBeenCalled();
+  fireEvent.click(check);
+  await waitFor(() => expect(screen.getByRole("button", { name: "Archive plan" })).toBeEnabled());
 });

@@ -35,7 +35,7 @@ its ID and exercises. Saves refresh v2 and related classic views. Failed saves
 retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
-Archive management, exercise management, and history browsing
+Exercise management and history browsing
 currently open the existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
@@ -80,6 +80,20 @@ accidental repeat. Existing reorder/removal services use multiple writes: a
 failed operation can leave a partially changed order, which is shown after the
 reload for review before another action. Successful changes refresh Library,
 Today, and classic plan views. New settings apply to future sessions only.
+
+## Plan archive and restore
+
+Plans can be archived and restored from their v2 plan page. Archive requires
+confirmation; save or discard pending name and exercise edits first. Archived
+plans remain accessible through Library’s Archived filter and retain their
+exercises. Restoring returns a plan to the active library; it appears in Today’s
+quick starts only when it meets the existing eligibility and ordering rules.
+Active workout snapshots and historical results remain unchanged.
+
+Archive actions share the editor’s pending lock and saved-state recovery. An
+uncertain response reloads the persisted plan before retrying; a failed recovery
+locks mutations until “Check saved plan” succeeds. Library, Today, the plan page,
+and classic plan views refresh after changes.
 
 ## Focused workout behavior
 

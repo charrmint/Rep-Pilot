@@ -28,7 +28,6 @@ export async function PlanScreen({ templateId }: { templateId: string }) {
     <PageHeader eyebrow={plan.isArchived ? "Library · Archived plan" : "Library · Plan"} title={plan.name} description="Shape your next session, one exercise at a time." />
     <PlanEditor key={plan.id} initialData={{ plan, availableExercises }} />
     <div className="v2-actions">
-      <Link className="v2-text-link" href="/templates">{plan.isArchived ? "Restore this plan in classic" : "Manage archives in classic"}</Link>
       <Link className="v2-text-link" href={`/workouts/templates/${plan.id}`}>View plan history</Link>
     </div>
   </>;
