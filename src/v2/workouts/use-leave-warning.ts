@@ -2,7 +2,11 @@
 
 import { useEffect } from "react";
 
-export function useLeaveWarning(dirty: boolean, pending: boolean) {
+export function useLeaveWarning(
+  dirty: boolean,
+  pending: boolean,
+  message = "Leave this workout? Unlogged changes will be lost. Logged sets are saved.",
+) {
   useEffect(() => {
     if (!dirty && !pending) return;
     function _beforeUnload(event: BeforeUnloadEvent) {
@@ -22,9 +26,7 @@ export function useLeaveWarning(dirty: boolean, pending: boolean) {
         return;
       if (
         pending ||
-        !window.confirm(
-          "Leave this workout? Unlogged changes will be lost. Logged sets are saved.",
-        )
+        !window.confirm(message)
       ) {
         event.preventDefault();
         event.stopPropagation();
@@ -36,5 +38,5 @@ export function useLeaveWarning(dirty: boolean, pending: boolean) {
       window.removeEventListener("beforeunload", _beforeUnload);
       document.removeEventListener("click", _onLink, true);
     };
-  }, [dirty, pending]);
+  }, [dirty, pending, message]);
 }

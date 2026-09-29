@@ -21,14 +21,22 @@ Client modules receive presentation data, never a database client or credential.
 | -------------------------- | -------------------------------------------------------- |
 | `/v2`                      | Training entry screen and resume action                  |
 | `/v2/library`              | Search active/archived plans and inspect their exercises |
+| `/v2/library/plans/new` | Create a plan |
+| `/v2/library/plans/[templateId]` | Rename a plan and configure its exercises |
 | `/v2/library/exercises`    | Search active/archived exercises and open history        |
 | `/v2/history`              | Entry points to session, plan, and exercise history      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
 | `/v2/workouts/[sessionId]` | Workout logging, completion, and read-only results       |
 
-The library uses live account data. Plan creation/editing, archive management,
-exercise management and history browsing currently open the
-existing routes. Login and demo entry also use the existing routes and keep their
+The library uses live account data. Plan creation and renaming stay in v2 and
+reuse existing name validation, duplicate checks (including archived plans), and
+owner-scoped services. Successful creation opens the new plan; renaming retains
+its ID and exercises. Saves refresh v2 and related classic views. Failed saves
+retain the entered name; uncertain responses prompt checking the library before
+retrying. Name drafts stay in memory; app links warn before discarding them and
+refresh/close uses the browser warning. Browser history navigation is not intercepted.
+Exercise management and history browsing
+currently open the existing routes. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
 ## Design foundations
@@ -43,6 +51,49 @@ Below 980px, navigation sits at the bottom with a compact header. Wider layouts
 use a 248px sidebar. Content remains centered and bounded, and cards use two
 columns where space permits. Library archives are a filter, not a separate
 account setting.
+
+## Plan exercise editing
+
+Plan pages add, remove, reorder, and configure exercises in v2. The searchable exercise picker displays matching results as you type, with
+arrow-key navigation, Enter to select, Escape to dismiss, and a clear action.
+Typing again clears the previous selection so only an explicitly chosen exercise
+can be added. The picker includes active built-in and custom exercises and excludes exercises
+already configured in the plan. Existing archived references remain editable.
+Each exercise saves separately through the shared template services; there is
+no whole-plan transaction. Removing an exercise requires confirmation and does
+not delete its history or change existing workout snapshots.
+
+Configuration retains sets, rep ranges, entered weight/unit, and increments in
+pounds. Changing the unit keeps the entered number, matching the classic editor;
+it does not convert the load. Existing unit normalization remains authoritative.
+RIR is recorded on workout sets, not configured on plans.
+
+Exercise drafts are keyed by template-exercise ID and survive other saves,
+reordering, and name refreshes. The name and exercise forms share a leave warning
+and block competing saves while a request is pending. Drafts are in memory;
+refresh/close warns, and browser history navigation is not intercepted.
+
+After mutation failures, the editor reloads persisted plan state and preserves
+remaining drafts. If that read fails, mutations stay locked until “Check saved
+plan” succeeds. A recovered add is removed from the picker, preventing an
+accidental repeat. Existing reorder/removal services use multiple writes: a
+failed operation can leave a partially changed order, which is shown after the
+reload for review before another action. Successful changes refresh Library,
+Today, and classic plan views. New settings apply to future sessions only.
+
+## Plan archive and restore
+
+Plans can be archived and restored from their v2 plan page. Archive requires
+confirmation; save or discard pending name and exercise edits first. Archived
+plans remain accessible through Library’s Archived filter and retain their
+exercises. Restoring returns a plan to the active library; it appears in Today’s
+quick starts only when it meets the existing eligibility and ordering rules.
+Active workout snapshots and historical results remain unchanged.
+
+Archive actions share the editor’s pending lock and saved-state recovery. An
+uncertain response reloads the persisted plan before retrying; a failed recovery
+locks mutations until “Check saved plan” succeeds. Library, Today, the plan page,
+and classic plan views refresh after changes.
 
 ## Focused workout behavior
 
@@ -111,7 +162,7 @@ v2 navigation and invalidate the related classic workout/history views.
 - **Today:** the active session leads with elapsed time and saved planned-set
   progress; extra sets do not fill missing planned positions. Up to two active
   plans with exercises appear in recently-updated order, with ID breaking ties.
-  Empty accounts lead to classic plan creation; incomplete and archived plans
+  Empty accounts lead to v2 plan creation; incomplete and archived plans
   lead to Library. Plans and progress stream independently so a slow or failed
   optional read does not remove Resume. Failed active-workout reads preserve
   account access but disable starts in Today and Library until a refresh succeeds.

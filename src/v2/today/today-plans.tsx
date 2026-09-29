@@ -44,7 +44,7 @@ export async function NextWorkout({ plans }: NextWorkoutProps) {
               : "Create a plan and add exercises to get ready for your first workout."}
       </p>
       <div className="v2-actions">
-        <ButtonLink href={ready || hasActive ? "/v2/library" : "/templates"}>
+        <ButtonLink href={ready || hasActive ? "/v2/library" : "/v2/library/plans/new"}>
           {ready ? "Choose a workout" : hasActive ? "Set up a plan" : "Create a plan"}
           <Icon name="arrow" />
         </ButtonLink>
@@ -54,11 +54,6 @@ export async function NextWorkout({ plans }: NextWorkoutProps) {
           </ButtonLink>
         )}
       </div>
-      {!ready && (
-        <p className="v2-classic-note">
-          Plan creation and editing open in the classic app.
-        </p>
-      )}
     </Card>
   );
 }
@@ -96,10 +91,10 @@ export async function TodayPlans({
             ? "Finish setting up a plan in your library."
             : hasArchived
               ? "Find your archived plans in the library, or create a new plan."
-              : "Create your first plan in the classic app. It will appear here when it has exercises."}
+              : "Create your first plan. It will appear here when it has exercises."}
         </p>
         <ButtonLink
-          href={hasActive || hasArchived ? "/v2/library" : "/templates"}
+          href={hasActive || hasArchived ? "/v2/library" : "/v2/library/plans/new"}
           variant="secondary"
         >
           {hasActive || hasArchived ? "Open library" : "Create a plan"}
