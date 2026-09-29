@@ -1188,3 +1188,49 @@
   .v2-workout-context:has(.v2-context-suggestion) { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .v2-context-suggestion { border-top: 0; border-left: 1px solid var(--v2-line); padding: 0 0 0 16px; }
 }
+
+.v2-search-picker {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.v2-picker-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v2-picker-input > input {
+  min-width: 0;
+  flex: 1;
+}
+.v2-picker-results {
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--v2-control-line);
+  border-radius: var(--v2-radius-md);
+  background: var(--v2-surface);
+}
+.v2-picker-results > li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+}
+.v2-picker-results > li:hover,
+.v2-picker-results > li[data-active="true"] {
+  background: var(--v2-bg);
+  outline: 2px solid var(--v2-brand-strong);
+  outline-offset: -2px;
+}
+.v2-picker-results > li[aria-selected="true"] {
+  font-weight: 600;
+}
