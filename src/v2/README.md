@@ -217,3 +217,7 @@ succeeds. Failed creation preserves the entered name. Unsaved names use the
 same app-link and browser-unload warning as plan forms; browser history
 navigation is not intercepted. The forms and row actions extend the mock-up’s
 Library placeholder using existing v2 tokens and controls.
+
+Plan exercise cards remain expanded in workout order, with separated headings
+and actions. Prescription fields use a single column on narrow screens and
+three columns on wider screens.

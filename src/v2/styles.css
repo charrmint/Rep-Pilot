@@ -1215,6 +1215,56 @@
   scroll-margin-top: 100px;
 }
 
+/* Ordered plan prescriptions stay expanded and follow workout order. */
+.v2-plan-editor,
+.v2-plan-editor-list,
+.v2-plan-exercise-card,
+.v2-plan-exercise-card fieldset,
+.v2-plan-name-form {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.v2-plan-editor-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 24px;
+}
+.v2-plan-editor-list > li,
+.v2-plan-exercise-heading > div {
+  min-width: 0;
+}
+.v2-plan-exercise-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-plan-exercise-heading h3 {
+  overflow-wrap: anywhere;
+}
+.v2-plan-exercise-card fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.v2-plan-config {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.v2-plan-config-help {
+  grid-column: 1 / -1;
+}
+@media (min-width: 600px) {
+  .v2-plan-config {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
 .v2-search-picker {
   display: grid;
   gap: 8px;
