@@ -18,6 +18,8 @@ export interface PlanEditorData {
 }
 
 export type PlanExerciseIntent = "add" | "save" | "remove" | "move_up" | "move_down";
+export type PlanArchiveIntent = "archive" | "restore";
+export type PlanMutationIntent = PlanExerciseIntent | PlanArchiveIntent;
 export type PlanExerciseDraft = Record<keyof WorkoutTemplateExerciseConfigInput, string>;
 export type PlanMutationResult =
   | { status: "success"; data: PlanEditorData; message: string }
