@@ -3,7 +3,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { PlanEditor } from "./plan-editor";
 import { mutateV2PlanExercise, reloadV2Plan } from "./exercise-actions";
 import { renameV2Plan } from "./actions";
-import type { PlanEditorData, PlanExerciseResult } from "./types";
+import type { PlanEditorData, PlanMutationResult } from "./types";
 
 const router = vi.hoisted(() => ({ refresh: vi.fn(), replace: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => router, unstable_rethrow: vi.fn() }));
@@ -24,7 +24,7 @@ const base: PlanEditorData = {
 };
 function _form(name: string) { return screen.getByRole("form", { name }); }
 function _sets(name: string) { return within(_form(`Configure ${name}`)).getByLabelText("Sets"); }
-function _success(data = base): PlanExerciseResult { return { status: "success", data, message: "Saved." }; }
+function _success(data = base): PlanMutationResult { return { status: "success", data, message: "Saved." }; }
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success()); });
 
@@ -67,7 +67,7 @@ it("saves only one exercise, preserving other drafts and entered units/increment
   expect(within(_form("Configure Bench press")).getByRole("button", { name: "Save exercise" })).toBeDisabled();
 });
 it("serializes repeated and competing mutations while a save is pending", async () => {
-  let finish!: (result: PlanExerciseResult) => void;
+  let finish!: (result: PlanMutationResult) => void;
   vi.mocked(mutateV2PlanExercise).mockReturnValue(new Promise(resolve => { finish = resolve; }));
   render(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "4" } });

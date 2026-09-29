@@ -1,12 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/features/auth/auth-server-service";
-import { listAvailableExercises } from "@/features/exercises/exercise-service";
 import {
   addWorkoutTemplateExercise,
-  getWorkoutTemplateDetails,
   moveWorkoutTemplateExercise,
   removeWorkoutTemplateExercise,
   updateWorkoutTemplateExercise,
@@ -17,22 +14,23 @@ import {
   readWeightUnitFormValue,
 } from "@/app/_shared/form-values";
 import type { WorkoutTemplateExerciseConfigInput } from "@/features/templates/types";
-import type { PlanEditorData, PlanExerciseResult } from "./types";
+import type { PlanEditorData, PlanMutationResult } from "./types";
+import { loadPlanEditorData, revalidatePlanViews } from "./plan-state";
 
 export async function reloadV2Plan(templateId: string): Promise<PlanEditorData> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
-  const data = await _loadPlan(user.id, templateId);
-  _revalidatePlan(templateId);
+  const data = await loadPlanEditorData(user.id, templateId);
+  revalidatePlanViews(templateId);
   return data;
 }
 
-export async function mutateV2PlanExercise(formData: FormData): Promise<PlanExerciseResult> {
+export async function mutateV2PlanExercise(formData: FormData): Promise<PlanMutationResult> {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
   const templateId = readStringFormValue(formData, "templateId");
   try {
-    const { plan, availableExercises } = await _loadPlan(user.id, templateId);
+    const { plan, availableExercises } = await loadPlanEditorData(user.id, templateId);
     const intent = readStringFormValue(formData, "intent");
     const templateExerciseId = readStringFormValue(formData, "templateExerciseId");
     const identity = { userId: user.id, templateId, templateExerciseId };
@@ -61,25 +59,19 @@ export async function mutateV2PlanExercise(formData: FormData): Promise<PlanExer
         throw new Error("Unknown plan action.");
       }
     }
-    _revalidatePlan(templateId);
-    return { status: "success", data: await _loadPlan(user.id, templateId), message };
+    revalidatePlanViews(templateId);
+    return { status: "success", data: await loadPlanEditorData(user.id, templateId), message };
   } catch (error) {
     // Existing reorder/removal services use multiple writes; reload after failures too.
-    _revalidatePlan(templateId);
+    revalidatePlanViews(templateId);
     let data: PlanEditorData | null = null;
     try {
-      data = await _loadPlan(user.id, templateId);
+      data = await loadPlanEditorData(user.id, templateId);
     } catch {
       // The client locks mutations until a recovery read succeeds.
     }
     return { status: "error", data, message: _errorMessage(error) };
   }
-}
-
-async function _loadPlan(userId: string, templateId: string): Promise<PlanEditorData> {
-  const plan = await getWorkoutTemplateDetails({ userId, templateId });
-  if (!plan) throw new Error("This plan is no longer available.");
-  return { plan, availableExercises: await listAvailableExercises() };
 }
 
 function _readConfig(formData: FormData): WorkoutTemplateExerciseConfigInput {
@@ -95,12 +87,6 @@ function _readConfig(formData: FormData): WorkoutTemplateExerciseConfigInput {
     defaultWeightUnit: readWeightUnitFormValue(formData, "defaultWeightUnit"),
     weightIncrementLbs: readNumberFormValue(formData, "weightIncrementLbs"),
   };
-}
-
-function _revalidatePlan(templateId: string) {
-  revalidatePath("/v2", "layout");
-  revalidatePath("/templates");
-  revalidatePath(`/templates/${templateId}/edit`);
 }
 
 function _errorMessage(error: unknown): string {
