@@ -1,0 +1,43 @@
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, expect, it, vi } from "vitest";
+import { PlanAssignment } from "./plan-assignment";
+import type { WorkoutTemplateDetails } from "@/features/templates/types";
+
+const plans: WorkoutTemplateDetails[] = ["Upper", "Lower"].map(name => ({ id: name.toLowerCase(), name, isArchived: false, createdAt: "today", updatedAt: "today", exercises: [] }));
+afterEach(cleanup);
+it("requires explicit selection, supports keyboard browsing, and clears selection when typing", () => {
+  const onAssign = vi.fn();
+  render(<PlanAssignment exerciseId="row" exerciseName="Row" plans={plans} disabled={false} onAssign={onAssign} />);
+  const input = screen.getByRole("combobox");
+  const submit = screen.getByRole("button", { name: "Add exercise" });
+  fireEvent.focus(input);
+  expect(screen.getAllByRole("option")).toHaveLength(2);
+  expect(submit).toBeDisabled();
+  fireEvent.change(input, { target: { value: "Upper" } });
+  fireEvent.submit(screen.getByRole("form"));
+  expect(onAssign).not.toHaveBeenCalled();
+  fireEvent.keyDown(input, { key: "ArrowDown" });
+  fireEvent.keyDown(input, { key: "Enter" });
+  expect(onAssign).not.toHaveBeenCalled();
+  expect(submit).toBeEnabled();
+  fireEvent.click(submit);
+  expect(onAssign.mock.calls[0][0].get("templateId")).toBe("upper");
+  fireEvent.change(input, { target: { value: "Low" } });
+  expect(submit).toBeDisabled();
+  expect(screen.getAllByRole("option")).toHaveLength(1);
+});
+it("invalidates a selection when its plan becomes ineligible and blocks pending submissions", () => {
+  const onAssign = vi.fn();
+  const props = { exerciseId: "row", exerciseName: "Row", onAssign };
+  const { rerender } = render(<PlanAssignment {...props} plans={plans} disabled={false} />);
+  fireEvent.focus(screen.getByRole("combobox"));
+  fireEvent.click(screen.getByRole("option", { name: "Upper" }));
+  rerender(<PlanAssignment {...props} plans={plans} disabled />);
+  fireEvent.submit(screen.getByRole("form"));
+  expect(onAssign).not.toHaveBeenCalled();
+  expect(screen.getByRole("combobox")).toBeDisabled();
+  rerender(<PlanAssignment {...props} plans={[plans[1]]} disabled={false} />);
+  expect(screen.getByRole("button", { name: "Add exercise" })).toBeDisabled();
+  fireEvent.submit(screen.getByRole("form"));
+  expect(onAssign).not.toHaveBeenCalled();
+});

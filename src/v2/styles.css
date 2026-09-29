@@ -1188,3 +1188,125 @@
   .v2-workout-context:has(.v2-context-suggestion) { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
   .v2-context-suggestion { border-top: 0; border-left: 1px solid var(--v2-line); padding: 0 0 0 16px; }
 }
+
+/* Exercise management preserves the compact library row until actions expand. */
+.v2-exercise-list > li.v2-managed-exercise {
+  flex-wrap: wrap;
+}
+.v2-exercise-management {
+  flex-basis: 100%;
+  min-width: 0;
+}
+.v2-exercise-assignment {
+  flex: 1;
+  min-width: 0;
+}
+.v2-exercise-assignment > summary {
+  width: fit-content;
+  cursor: pointer;
+}
+.v2-exercise-assignment[open] {
+  flex-basis: 100%;
+}
+.v2-exercise-assignment form {
+  margin-top: 16px;
+}
+#create-exercise {
+  scroll-margin-top: 100px;
+}
+
+/* Ordered plan prescriptions stay expanded and follow workout order. */
+.v2-plan-editor,
+.v2-plan-editor-list,
+.v2-plan-exercise-card,
+.v2-plan-exercise-card fieldset,
+.v2-plan-name-form {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.v2-plan-editor-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  gap: 24px;
+}
+.v2-plan-editor-list > li,
+.v2-plan-exercise-heading > div {
+  min-width: 0;
+}
+.v2-plan-exercise-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-plan-exercise-heading h3 {
+  overflow-wrap: anywhere;
+}
+.v2-plan-exercise-card fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+.v2-plan-config {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+.v2-plan-config-help {
+  grid-column: 1 / -1;
+}
+@media (min-width: 600px) {
+  .v2-plan-config {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+.v2-search-picker {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.v2-picker-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.v2-picker-input > input {
+  min-width: 0;
+  flex: 1;
+}
+.v2-picker-results {
+  list-style: none;
+  padding: 4px;
+  margin: 0;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--v2-control-line);
+  border-radius: var(--v2-radius-md);
+  background: var(--v2-surface);
+}
+.v2-picker-results > li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 12px;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+}
+.v2-picker-results > li:hover,
+.v2-picker-results > li[data-active="true"] {
+  background: var(--v2-bg);
+  outline: 2px solid var(--v2-brand-strong);
+  outline-offset: -2px;
+}
+.v2-picker-results > li[aria-selected="true"] {
+  font-weight: 600;
+}
