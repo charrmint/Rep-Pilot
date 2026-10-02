@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Bundled agent tooling is not application source.
+    ".agents/**",
+    ".codex/**",
   ]),
 ]);
 
