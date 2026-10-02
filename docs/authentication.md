@@ -6,6 +6,14 @@ expired, or revoked credentials are treated as signed out; service failures
 remain distinct from an absent session. Middleware refreshes credentials and
 forwards Supabase's cookie and cache-protection headers.
 
+## Entry pages
+
+The public landing page introduces planning, logging, and saved progression with
+an explicitly labeled example workout. Shared sign-in/signup and password
+recovery pages use the same visual system without requiring the training app
+shell. Existing URLs and return destinations are preserved. Account forms are
+primary on `/login`; demo entry is primary on `/` and secondary on `/login`.
+
 ## Email confirmation and password recovery
 
 - Signup requests redirect to `/auth/callback` for PKCE code exchange, then to

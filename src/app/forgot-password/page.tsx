@@ -14,7 +14,7 @@ export default async function ForgotPasswordPage({
       {error === "invalid_link" ? (
         <p
           role="alert"
-          className="rounded-md bg-amber-50 p-3 text-sm text-amber-900"
+          className="v2-auth-notice v2-auth-error"
         >
           This reset link is expired, already used, or couldn’t be verified.
           Request a new email and open the latest link in the same browser and
