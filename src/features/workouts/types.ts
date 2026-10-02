@@ -235,3 +235,5 @@ export interface CompleteWorkoutWithResultsInput
   extends CompleteWorkoutWithRecommendationsInput {
   strengthRecords: PreparedStrengthRecord[];
 }
+
+export type HistoryRecommendations = Record<string, PersistedProgressionRecommendation>;
