@@ -52,6 +52,7 @@ export interface WorkoutConfirmationProps {
   onCheck: () => void;
 }
 export interface WorkoutResultsProps {
+  fromHistory?: boolean;
   workout: WorkoutSession;
 }
 

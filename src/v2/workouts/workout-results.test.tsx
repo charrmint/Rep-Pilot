@@ -116,3 +116,10 @@ it("renders skipped exercises and incomplete legacy recommendations safely", () 
   expect(screen.getByText("Stay at 50 kg")).toBeInTheDocument();
   expect(screen.queryByText(/working sets ·/)).not.toBeInTheDocument();
 });
+it("shows saved prescription and recorded decision labels when opened from history", () => {
+  render(<WorkoutResults workout={workout} fromHistory />);
+  expect(screen.getByText(/3 planned sets · 8–10 reps · 50 kg planned/)).toBeInTheDocument();
+  expect(screen.getByText("Recorded next-session decision")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Back to History" })).toHaveAttribute("href", "/v2/history");
+  expect(screen.getByRole("link", { name: "Exercise history" })).toHaveAttribute("href", "/v2/history/exercises/bench");
+});
