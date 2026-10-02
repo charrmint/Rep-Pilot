@@ -21,7 +21,7 @@ export async function startDemoAction(
   const existingUser = await getCurrentUser();
 
   if (existingUser && !existingUser.is_anonymous) {
-    redirect("/templates");
+    redirect("/v2");
   }
 
   try {
@@ -31,6 +31,7 @@ export async function startDemoAction(
       userId: user.id,
       isAnonymous: user.is_anonymous === true,
     });
+    revalidatePath("/v2", "layout");
     revalidatePath("/templates");
     revalidatePath("/workouts");
   } catch (error) {
@@ -43,5 +44,5 @@ export async function startDemoAction(
     };
   }
 
-  redirect("/templates");
+  redirect("/v2");
 }

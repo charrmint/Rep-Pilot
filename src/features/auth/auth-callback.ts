@@ -20,7 +20,7 @@ export async function handleAuthCallback(
       const supabase = await createSupabaseServerClient();
       const { data, error } = await supabase.auth.exchangeCodeForSession(code);
       if (!error && data.session && data.user && !data.user.is_anonymous) {
-        if (!isRecovery) destination = "/templates";
+        if (!isRecovery) destination = "/v2";
         else if (await getPasswordRecoveryUser(supabase))
           destination = "/reset-password";
       }

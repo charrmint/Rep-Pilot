@@ -60,7 +60,7 @@ describe("auth callback", () => {
   ])("keeps signup and untrusted destinations local (%s)", async (next) => {
     const response = await handleAuthCallback(_request(`?code=secret${next}`));
     expect(response.headers.get("location")).toBe(
-      "https://rep-pilot.example/templates",
+      "https://rep-pilot.example/v2",
     );
   });
 

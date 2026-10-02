@@ -179,7 +179,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
               </fieldset>
             </form>
           )}
-          <Link className="v2-text-link" href="/exercises">Manage exercises in classic</Link>
+          <Link className="v2-text-link" href="/v2/library/exercises">Manage exercises</Link>
         </Card>
       </section>
       <Card className="v2-plan-overview">

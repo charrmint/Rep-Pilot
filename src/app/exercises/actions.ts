@@ -31,6 +31,7 @@ export async function createCustomExerciseAction(
       userId: user.id,
       name: readStringFormValue(formData, "name"),
     });
+    revalidatePath("/v2", "layout");
     revalidatePath("/exercises");
 
     return {
@@ -58,6 +59,7 @@ export async function setCustomExerciseArchiveStatusAction(
       exerciseId: readStringFormValue(formData, "exerciseId"),
       isArchived: readStringFormValue(formData, "isArchived") === "true",
     });
+    revalidatePath("/v2", "layout");
     revalidatePath("/exercises");
 
     return {
@@ -88,6 +90,7 @@ export async function addExerciseToWorkoutTemplateAction(
       exerciseId: readStringFormValue(formData, "exerciseId"),
       config: DEFAULT_WORKOUT_TEMPLATE_EXERCISE_CONFIG,
     });
+    revalidatePath("/v2", "layout");
     revalidatePath("/exercises");
     revalidatePath("/templates");
     revalidatePath(`/templates/${templateId}/edit`);

@@ -4,6 +4,11 @@
 
 RepPilot is a mobile-first strength-training log built around reusable workout templates, set-level performance data, and deterministic double-progression prescriptions.
 
+The public landing page is at `/`. Sign-in and demo entry open Today at `/v2`.
+The classic interface remains available through the sidebar or Profile at
+`/templates`, with a link back to the current app. See the
+[interface verification checklist](docs/interface-verification.md) for manual acceptance checks.
+
 ## Stack
 
 - Next.js 16 / React 19 / TypeScript
