@@ -11,12 +11,12 @@ function _fill() {
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "person@example.com" } });
   fireEvent.change(screen.getByLabelText("Password"), { target: { value: "password123" } });
 }
-it("keeps the existing sign-in destination and password-manager semantics", async () => {
+it("opens Today after sign-in and preserves password-manager semantics", async () => {
   vi.mocked(signInWithPassword).mockResolvedValue();
   render(<LoginForm />); _fill();
   expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
   fireEvent.submit(screen.getByRole("form"));
-  await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/templates"));
+  await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/v2"));
   expect(signInWithPassword).toHaveBeenCalledWith({ email: "person@example.com", password: "password123" });
   expect(router.refresh).toHaveBeenCalledOnce();
 });
@@ -26,7 +26,7 @@ it.each([true, false])("handles signup with session=%s", async hasSession => {
   fireEvent.click(screen.getByRole("button", { name: "Create account" })); _fill();
   expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password");
   fireEvent.submit(screen.getByRole("form"));
-  if (hasSession) await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/templates"));
+  if (hasSession) await waitFor(() => expect(router.replace).toHaveBeenCalledWith("/v2"));
   else {
     expect(await screen.findByRole("status")).toHaveTextContent("Confirm your email");
     expect(router.replace).not.toHaveBeenCalled();

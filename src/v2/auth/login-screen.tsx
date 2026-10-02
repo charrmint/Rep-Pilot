@@ -15,7 +15,7 @@ export default async function LoginPage({ searchParams }: AuthPageProps) {
   const { error, status } = await searchParams;
 
   if (user && !user.is_anonymous && error !== "invalid_link") {
-    redirect("/templates");
+    redirect("/v2");
   }
 
   return <PublicShell narrow>

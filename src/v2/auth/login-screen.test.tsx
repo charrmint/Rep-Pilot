@@ -10,9 +10,9 @@ vi.mock("./login-form", () => ({ LoginForm: () => <form aria-label="Account form
 vi.mock("@/features/demo/demo-entry-form", () => ({ DemoEntryForm: () => <form aria-label="Demo form" /> }));
 beforeEach(() => vi.resetAllMocks());
 afterEach(cleanup);
-it("preserves the signed-in redirect while allowing confirmation failure feedback", async () => {
+it("redirects signed-in users to Today while allowing confirmation failure feedback", async () => {
   vi.mocked(getCurrentUser).mockResolvedValue({ id: "owner", is_anonymous: false } as NonNullable<Awaited<ReturnType<typeof getCurrentUser>>>);
-  await expect(LoginScreen({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/templates");
+  await expect(LoginScreen({ searchParams: Promise.resolve({}) })).rejects.toThrow("redirect:/v2");
   render(await LoginScreen({ searchParams: Promise.resolve({ error: "invalid_link" }) }));
   expect(screen.getByRole("alert")).toHaveTextContent("same browser and device");
 });
