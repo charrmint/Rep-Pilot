@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "RepPilot",
-  description: "Log the workout. Know what to do next.",
+  description: "Plan your strength training, log your sets, and review your progress with RepPilot.",
 };
 
 export default function RootLayout({

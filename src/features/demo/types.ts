@@ -24,3 +24,7 @@ export interface DemoProgressionPerformance {
 
 export type DemoProgressionRecommendationInsert =
   TablesInsert<"progression_recommendations">;
+
+export interface DemoEntryFormProps {
+  secondary?: boolean;
+}

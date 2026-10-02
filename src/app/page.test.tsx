@@ -7,14 +7,14 @@ describe("Home", () => {
     render(<Home />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "RepPilot" }),
+      screen.getByRole("heading", { level: 1, name: "Track your strength training." }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Log the workout. Know what to do next."),
+      screen.getByText("Create plans, log sets, and review your progress."),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Start demo" })).toBeEnabled();
     expect(
-      screen.getByRole("link", { name: "Sign in" }),
+      screen.getByRole("link", { name: "Sign in or create an account" }),
     ).toHaveAttribute("href", "/login");
   });
 });
