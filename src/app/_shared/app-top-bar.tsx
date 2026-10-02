@@ -55,6 +55,7 @@ export function AppTopBar({ activeSection, userEmail }: AppTopBarProps) {
             Change password
           </Link>
         ) : null}
+        <Link href="/v2" className="px-3 py-2 text-sm font-medium text-gray-700 underline">Open current app</Link>
         <LogoutButton />
       </div>
     </div>
