@@ -1,6 +1,7 @@
 # RepPilot v2 interface
 
-The new interface lives at `/v2`, alongside the existing application. Routes in
+The default training interface lives at `/v2`. The classic application remains
+available at `/templates` through the sidebar or Profile. Routes in
 `src/app/v2` compose screens from this module. All styling is scoped to `.v2-root`
 so visiting v2 cannot change the appearance of existing routes.
 
@@ -36,8 +37,10 @@ retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
 History browsing stays in v2. Landing and authentication use v2 presentation at
-the existing shared URLs. Login and demo entry keep their
-existing redirects; after signing in, visit `/v2` to use the new interface.
+the existing shared URLs. Successful login, signup with a session, email
+confirmation, and demo entry open `/v2`. The public `/` remains the landing page.
+Classic routes stay accessible, and their header links back to the current app.
+Exercise changes in classic also invalidate v2 so both interfaces reflect saved data.
 
 ## Design foundations
 
@@ -256,9 +259,9 @@ typography, fields, and focus styles. They do not mount the signed-in navigation
 or depend on active-workout reads. The landing preview is explicitly illustrative.
 Demo entry is primary on the landing page and secondary below the account form.
 
-Existing authentication services, demo provisioning, callback destinations,
-recovery checks, and global sign-out behavior are preserved. Successful ordinary
-authentication and demo entry still open `/templates`; password recovery still
+Existing authentication services, demo provisioning, recovery checks, and
+global sign-out behavior are preserved. Successful ordinary authentication and
+demo entry open `/v2`; password recovery still
 returns to `/login?status=password_reset`. No duplicate authentication URLs or
 new provider configuration are introduced. See `docs/authentication.md` for
 security behavior and live email-flow verification.
