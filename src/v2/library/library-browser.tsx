@@ -162,7 +162,7 @@ export function LibraryBrowser({
                   </ButtonLink>
                   <Link
                     className="v2-text-link"
-                    href={`/workouts/templates/${plan.id}`}
+                    href={`/v2/history/plans/${plan.id}`}
                   >
                     History
                   </Link>
@@ -189,7 +189,7 @@ export function LibraryBrowser({
               </div>
               <Link
                 className="v2-text-link"
-                href={`/workouts/exercises/${exercise.id}`}
+                href={`/v2/history/exercises/${exercise.id}`}
                 aria-label={`View history for ${exercise.name}`}
               >
                 History <Icon name="arrow" />

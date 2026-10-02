@@ -80,7 +80,7 @@ describe("V2 library", () => {
     ).not.toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: "View history for Old row" }),
-    ).toHaveAttribute("href", "/workouts/exercises/old-row");
+    ).toHaveAttribute("href", "/v2/history/exercises/old-row");
   });
 
   it("recovers from an empty search without changing the archive selection", () => {

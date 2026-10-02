@@ -1310,3 +1310,26 @@
 .v2-picker-results > li[aria-selected="true"] {
   font-weight: 600;
 }
+
+.v2-history-stack,
+.v2-history-session {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+ul.v2-history-stack,
+ol.v2-history-stack,
+.v2-history-sets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.v2-history-stack > section + section { margin-top: 16px; }
+.v2-history-details > summary { cursor: pointer; min-height: 44px; padding: 12px 0; font-weight: 600; }
+.v2-history-exercise { display: grid; gap: 12px; padding: 16px 0; border-top: 1px solid var(--v2-line); }
+.v2-history-sets { display: grid; gap: 8px; }
+.v2-history-sets > li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px; padding: 8px 0; }
+.v2-history-decision { display: grid; gap: 8px; padding: 16px; border-left: 3px solid var(--v2-brand-strong); background: var(--v2-soft); border-radius: 8px; }
+.v2-history-stack :is(h2, h3, h4) { overflow-wrap: anywhere; }
+
+.v2-history-pagination { align-items: center; }

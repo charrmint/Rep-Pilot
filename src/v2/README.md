@@ -24,7 +24,7 @@ Client modules receive presentation data, never a database client or credential.
 | `/v2/library/plans/new` | Create a plan |
 | `/v2/library/plans/[templateId]` | Rename a plan and configure its exercises |
 | `/v2/library/exercises`    | Create, archive, restore, and add exercises to plans        |
-| `/v2/history`              | Entry points to session, plan, and exercise history      |
+| `/v2/history`              | Completed/abandoned sessions grouped by local month      |
 | `/v2/profile`              | Account identity, password recovery link, and sign-out   |
 | `/v2/workouts/[sessionId]` | Workout logging, completion, and read-only results       |
 
@@ -35,7 +35,7 @@ its ID and exercises. Saves refresh v2 and related classic views. Failed saves
 retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
-History browsing currently opens the existing routes. Login and demo entry also use the existing routes and keep their
+History browsing stays in v2. Login and demo entry also use the existing routes and keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
 ## Design foundations
@@ -209,7 +209,7 @@ selection in the plan editor. It lists only active plans that do not already
 contain the exercise. Focus shows choices, typing filters them, and an explicit
 selection is required before submitting. Assignments use the existing default prescription: 3 sets
 of 8–12 reps, 0 lb, and a 5 lb increment. A success link opens the plan editor
-for adjustment. History links continue to use the existing history routes.
+for adjustment. History links open the corresponding v2 history views.
 
 Mutations share a pending lock and reload the saved library and eligible plans.
 If verification fails, changes remain disabled until “Check saved library”
@@ -221,3 +221,28 @@ Library placeholder using existing v2 tokens and controls.
 Plan exercise cards remain expanded in workout order, with separated headings
 and actions. Prescription fields use a single column on narrow screens and
 three columns on wider screens.
+
+## History browsing
+
+History offers Sessions, Plans, and Exercises views. Sessions are grouped into
+calendar months in the viewer’s local time; existing pagination is retained,
+so a month can continue across pages. Completed and abandoned workouts remain
+visible, with abandoned status explicitly labeled and no invented duration or
+progression decision. Empty pages retain links to newer results when available.
+
+Plan and exercise indexes link to `/v2/history/plans/[templateId]` and
+`/v2/history/exercises/[exerciseId]`. Archived plans retain their history.
+Session cards expand to show working sets and recorded progression decisions.
+Decisions are loaded in one owner-scoped batch per page and are never recomputed
+from the current plan. Missing legacy decisions are explicitly identified.
+
+`/v2/history/sessions/[sessionId]` reuses the read-only workout results screen,
+including saved prescriptions, logged sets, records, and recommendations. Active
+sessions redirect to the workout logger. Library, plan-editor, and result links
+stay within v2. The existing authentication, loading, and error boundaries remain
+in effect; unavailable subjects have a history-specific return path.
+
+The layout preserves the mock-up’s progression context, using month groups for
+easier date scanning, existing v2 tokens, compact cards, and expandable exercise
+details. Session dates show Today or Yesterday for recent workouts and a weekday
+for older workouts, always alongside the month and day.

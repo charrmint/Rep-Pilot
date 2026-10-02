@@ -9,7 +9,7 @@ import { ButtonLink, Card } from "../ui/primitives";
 import { plannedSetCount } from "./editor-state";
 import type { WorkoutResultsProps } from "./types";
 
-export function WorkoutResults({ workout }: WorkoutResultsProps) {
+export function WorkoutResults({ workout, fromHistory = false }: WorkoutResultsProps) {
   const results = useRef<HTMLDivElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const completed = workout.status === "completed";
@@ -32,8 +32,8 @@ export function WorkoutResults({ workout }: WorkoutResultsProps) {
   }, []);
   return (
     <div ref={results} className="v2-workout-results">
-      <ButtonLink href="/v2" variant="quiet">
-        ← Today
+      <ButtonLink href={fromHistory ? "/v2/history" : "/v2"} variant="quiet">
+        {fromHistory ? "← History" : "← Today"}
       </ButtonLink>
       <Card className="v2-hero">
         <p className="v2-eyebrow">
@@ -90,9 +90,10 @@ export function WorkoutResults({ workout }: WorkoutResultsProps) {
         <Card key={exercise.id} className="v2-result-exercise">
           <p className="v2-eyebrow">Exercise {exercise.position}</p>
           <h2>{exercise.exerciseName}</h2>
+          <ButtonLink variant="quiet" href={`/v2/history/exercises/${exercise.exerciseId}`}>Exercise history</ButtonLink>
           <p className="v2-muted">
             {exercise.targetSets} planned sets · {exercise.minReps}–
-            {exercise.maxReps} reps
+            {exercise.maxReps} reps · {exercise.plannedWeightValue} {exercise.plannedWeightUnit} planned
           </p>
           {exercise.sets.length ? (
             <ol className="v2-saved-sets">
@@ -124,6 +125,7 @@ export function WorkoutResults({ workout }: WorkoutResultsProps) {
               />
               {exercise.recommendation && (
                 <RecommendationSummary
+                  label={fromHistory ? "Recorded next-session decision" : "Next session"}
                   recommendation={exercise.recommendation}
                   displayUnit={exercise.plannedWeightUnit}
                   targetSets={exercise.targetSets}
@@ -134,7 +136,7 @@ export function WorkoutResults({ workout }: WorkoutResultsProps) {
         </Card>
       ))}
       <div className="v2-actions">
-        <ButtonLink href="/v2">Back to Today</ButtonLink>
+        <ButtonLink href={fromHistory ? "/v2/history" : "/v2"}>{fromHistory ? "Back to History" : "Back to Today"}</ButtonLink>
         <ButtonLink variant="secondary" href="/v2/library">
           Choose a plan
         </ButtonLink>
