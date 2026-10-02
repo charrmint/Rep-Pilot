@@ -1,17 +1,20 @@
 "use client";
 
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
 import { requestPasswordReset } from "./auth-client-service";
 
 export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pending = useRef(false);
   const [isSent, setIsSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function _handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending.current) return;
+    pending.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
     setIsSent(false);
@@ -25,6 +28,7 @@ export function ForgotPasswordForm() {
           : "Unable to send a reset email. Please try again.",
       );
     } finally {
+      pending.current = false;
       setIsSubmitting(false);
     }
   }
@@ -32,9 +36,11 @@ export function ForgotPasswordForm() {
   return (
     <form
       onSubmit={_handleSubmit}
-      className="flex flex-col gap-4 rounded-md border border-gray-200 bg-white p-5 shadow-sm"
+      aria-busy={isSubmitting}
+      aria-describedby={errorMessage ? "forgot-error" : undefined}
+      className="v2-card v2-auth-form"
     >
-      <label className="flex flex-col gap-2 text-sm font-medium text-gray-800">
+      <label className="v2-field">
         Email
         <input
           type="email"
@@ -46,13 +52,13 @@ export function ForgotPasswordForm() {
             setEmail(event.target.value);
             setIsSent(false);
           }}
-          className="min-h-12 rounded-md border border-gray-300 px-3 text-base text-gray-950 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="v2-input"
         />
       </label>
       {isSent ? (
         <p
           role="status"
-          className="rounded-md bg-green-50 p-3 text-sm text-green-800"
+          className="v2-auth-notice v2-auth-success"
         >
           If an account exists for that email, we’ve sent a password reset link.
           Check your inbox and spam folder. Open the latest link in this browser
@@ -60,14 +66,14 @@ export function ForgotPasswordForm() {
         </p>
       ) : null}
       {errorMessage ? (
-        <p role="alert" className="text-sm text-red-700">
+        <p id="forgot-error" role="alert" className="v2-auth-notice v2-auth-error">
           {errorMessage}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="min-h-12 rounded-md bg-gray-950 px-4 text-sm font-semibold text-white disabled:opacity-60"
+        className="v2-button v2-button--primary"
       >
         {isSubmitting
           ? "Sending..."

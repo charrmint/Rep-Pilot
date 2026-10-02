@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
 import { signOut } from "./auth-client-service";
 import { resetPassword } from "./password-recovery-actions";
@@ -13,6 +13,7 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
   const [password, setPassword] = useState("");
   const [confirmation, setConfirmation] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const pending = useRef(false);
   const [isUpdated, setIsUpdated] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -23,6 +24,8 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
 
   async function _handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (pending.current) return;
+    pending.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -45,11 +48,14 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
           : "Unable to update your password. Please try again.",
       );
     } finally {
+      pending.current = false;
       setIsSubmitting(false);
     }
   }
 
   async function _retrySignOut() {
+    if (pending.current) return;
+    pending.current = true;
     setIsSubmitting(true);
     setErrorMessage(null);
     try {
@@ -58,19 +64,20 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
     } catch {
       setErrorMessage("Unable to sign out. Please try again.");
     } finally {
+      pending.current = false;
       setIsSubmitting(false);
     }
   }
 
   if (isUpdated) {
     return (
-      <div className="flex flex-col gap-4 rounded-md border border-gray-200 bg-white p-5">
-        <p role="status" className="text-sm text-gray-800">
+      <div className="v2-card v2-auth-form">
+        <p role="status" className="v2-muted">
           Your password has been updated. We couldn’t finish signing you out.
           Retry to end your sessions and sign in with your new password.
         </p>
         {errorMessage ? (
-          <p role="alert" className="text-sm text-red-700">
+          <p id="reset-error" role="alert" className="v2-auth-notice v2-auth-error">
             {errorMessage}
           </p>
         ) : null}
@@ -78,7 +85,7 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
           type="button"
           onClick={_retrySignOut}
           disabled={isSubmitting}
-          className="min-h-12 rounded-md bg-gray-950 px-4 text-sm font-semibold text-white disabled:opacity-60"
+          className="v2-button v2-button--primary"
         >
           {isSubmitting ? "Signing out..." : "Retry sign out"}
         </button>
@@ -89,16 +96,18 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
   return (
     <form
       onSubmit={_handleSubmit}
-      className="flex flex-col gap-4 rounded-md border border-gray-200 bg-white p-5 shadow-sm"
+      aria-busy={isSubmitting}
+      aria-describedby={errorMessage ? "reset-error" : undefined}
+      className="v2-card v2-auth-form"
     >
-      <p className="break-words text-sm text-gray-600">
+      <p className="v2-muted">
         Resetting the password for {email}.
       </p>
-      <p className="text-sm text-gray-600">
+      <p className="v2-muted">
         Save within 15 minutes of opening your email link. This verification can
         be used for one password update attempt.
       </p>
-      <label className="flex flex-col gap-2 text-sm font-medium text-gray-800">
+      <label className="v2-field">
         New password
         <input
           type="password"
@@ -109,13 +118,13 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
           disabled={isSubmitting}
           onChange={(event) => setPassword(event.target.value)}
           aria-describedby="password-help"
-          className="min-h-12 rounded-md border border-gray-300 px-3 text-base text-gray-950 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="v2-input"
         />
       </label>
-      <p id="password-help" className="text-sm text-gray-600">
+      <p id="password-help" className="v2-muted">
         Use at least 6 characters. A long, unique password is best.
       </p>
-      <label className="flex flex-col gap-2 text-sm font-medium text-gray-800">
+      <label className="v2-field">
         Confirm new password
         <input
           type="password"
@@ -125,28 +134,28 @@ export function ResetPasswordForm({ email, userId }: ResetPasswordFormProps) {
           value={confirmation}
           disabled={isSubmitting}
           onChange={(event) => setConfirmation(event.target.value)}
-          className="min-h-12 rounded-md border border-gray-300 px-3 text-base text-gray-950 focus-visible:outline-2 focus-visible:outline-offset-2"
+          className="v2-input"
         />
       </label>
-      <p className="text-sm text-gray-600">
+      <p className="v2-muted">
         After saving, you’ll be signed out of your sessions and asked to sign in
         again.
       </p>
       {errorMessage ? (
-        <p role="alert" className="text-sm text-red-700">
+        <p id="reset-error" role="alert" className="v2-auth-notice v2-auth-error">
           {errorMessage}
         </p>
       ) : null}
       <button
         type="submit"
         disabled={isSubmitting}
-        className="min-h-12 rounded-md bg-gray-950 px-4 text-sm font-semibold text-white disabled:opacity-60"
+        className="v2-button v2-button--primary"
       >
         {isSubmitting ? "Updating password..." : "Update password"}
       </button>
       <Link
         href="/forgot-password"
-        className="py-2 text-center text-sm font-semibold text-gray-700 underline"
+        className="v2-text-link"
       >
         Request a new reset email
       </Link>

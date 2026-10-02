@@ -35,7 +35,8 @@ its ID and exercises. Saves refresh v2 and related classic views. Failed saves
 retain the entered name; uncertain responses prompt checking the library before
 retrying. Name drafts stay in memory; app links warn before discarding them and
 refresh/close uses the browser warning. Browser history navigation is not intercepted.
-History browsing stays in v2. Login and demo entry also use the existing routes and keep their
+History browsing stays in v2. Landing and authentication use v2 presentation at
+the existing shared URLs. Login and demo entry keep their
 existing redirects; after signing in, visit `/v2` to use the new interface.
 
 ## Design foundations
@@ -246,3 +247,23 @@ The layout preserves the mock-up’s progression context, using month groups for
 easier date scanning, existing v2 tokens, compact cards, and expandable exercise
 details. Session dates show Today or Yesterday for recent workouts and a weekday
 for older workouts, always alongside the month and day.
+
+## Public entry and authentication
+
+The public landing page and shared `/login`, `/forgot-password`, and
+`/reset-password` pages use a standalone presentation shell with v2 colors,
+typography, fields, and focus styles. They do not mount the signed-in navigation
+or depend on active-workout reads. The landing preview is explicitly illustrative.
+Demo entry is primary on the landing page and secondary below the account form.
+
+Existing authentication services, demo provisioning, callback destinations,
+recovery checks, and global sign-out behavior are preserved. Successful ordinary
+authentication and demo entry still open `/templates`; password recovery still
+returns to `/login?status=password_reset`. No duplicate authentication URLs or
+new provider configuration are introduced. See `docs/authentication.md` for
+security behavior and live email-flow verification.
+
+Account and recovery forms prevent duplicate submissions while pending, retain
+failure feedback, and support browser password managers. Signup confirmation
+and password-reset partial success remain distinct states; sign-out retry does
+not repeat a successful password update.

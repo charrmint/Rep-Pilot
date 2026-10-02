@@ -4,26 +4,27 @@ import { useActionState } from "react";
 
 import { INITIAL_FORM_ACTION_STATE } from "@/app/_shared/form-action-state";
 
+import type { DemoEntryFormProps } from "./types";
 import { startDemoAction } from "./demo-actions";
 
-export function DemoEntryForm() {
+export function DemoEntryForm({ secondary = false }: DemoEntryFormProps) {
   const [state, formAction, isPending] = useActionState(
     startDemoAction,
     INITIAL_FORM_ACTION_STATE,
   );
 
   return (
-    <form action={formAction} className="w-full">
+    <form aria-label="Start demo" aria-busy={isPending} action={formAction} className="v2-demo-form">
       <button
         type="submit"
         disabled={isPending}
-        className="min-h-12 w-full rounded-md bg-gray-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+        className={`v2-button v2-button--${secondary ? "secondary" : "primary"}`}
       >
         {isPending ? "Preparing demo..." : "Start demo"}
       </button>
 
       {state.message ? (
-        <p className="mt-3 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        <p role="alert" className="v2-auth-notice v2-auth-error">
           {state.message}
         </p>
       ) : null}
