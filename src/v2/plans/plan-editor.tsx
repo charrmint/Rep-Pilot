@@ -20,6 +20,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
   const router = useRouter();
   const lock = useRef(false);
   const [data, setData] = useState(initialData);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [drafts, setDrafts] = useState<Record<string, PlanExerciseDraft>>({});
   const [addDraft, setAddDraft] = useState(EMPTY_ADD_DRAFT);
   const [selectedId, setSelectedId] = useState("");
@@ -135,28 +136,45 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
           {data.plan.exercises.map((exercise, index) => (
             <li key={exercise.id}>
               <Card className="v2-plan-exercise-card">
-                <div className="v2-plan-exercise-heading">
-                  <div><p className="v2-eyebrow">Exercise {index + 1}</p><h3>{exercise.exerciseName}</h3>
-                    <p className="v2-muted">{exercise.exerciseIsSystemExercise ? "Built-in exercise" : "Custom exercise"}{exercise.exerciseIsArchived ? " · Archived exercise" : ""}</p>
-                  </div>
-                  <div className="v2-actions" role="group" aria-label={`Arrange ${exercise.exerciseName}`}>
-                    <Button variant="quiet" disabled={disabled || index === 0} aria-label={`Move ${exercise.exerciseName} up`} onClick={() => _mutate("move_up", new FormData(), exercise.id)}>Up</Button>
-                    <Button variant="quiet" disabled={disabled || index === data.plan.exercises.length - 1} aria-label={`Move ${exercise.exerciseName} down`} onClick={() => _mutate("move_down", new FormData(), exercise.id)}>Down</Button>
-                    <Button variant="quiet" disabled={disabled} aria-label={`Remove ${exercise.exerciseName}`} onClick={() => _mutate("remove", new FormData(), exercise.id)}>Remove</Button>
+                <div className="v2-plan-exercise-summary">
+                  <h3>
+                    <button type="button" className="v2-plan-exercise-toggle"
+                      aria-expanded={Boolean(expanded[exercise.id])}
+                      aria-controls={`${exercise.id}-settings`}
+                      aria-describedby={`${exercise.id}-summary`}
+                      disabled={busy}
+                      onClick={() => setExpanded(current => ({ ...current, [exercise.id]: !current[exercise.id] }))}>
+                      <span>{exercise.exerciseName}</span>
+                      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 9 6 6 6-6" /></svg>
+                    </button>
+                  </h3>
+                  <p id={`${exercise.id}-summary`} className="v2-muted">
+                    {exercise.config.targetSets} sets · {exercise.config.minReps}–{exercise.config.maxReps} reps · {exercise.config.defaultWeightValue} {exercise.config.defaultWeightUnit}
+                    {exercise.exerciseIsArchived ? " · Archived exercise" : ""}
+                    {drafts[exercise.id] && <span className="v2-plan-draft-status"> · Unsaved changes</span>}
+                  </p>
+                </div>
+                <div id={`${exercise.id}-settings`} hidden={!expanded[exercise.id]}>
+                  <div className="v2-plan-exercise-body">
+                    <div className="v2-actions" role="group" aria-label={`Arrange ${exercise.exerciseName}`}>
+                      <Button variant="quiet" disabled={disabled || index === 0} aria-label={`Move ${exercise.exerciseName} up`} onClick={() => _mutate("move_up", new FormData(), exercise.id)}>Up</Button>
+                      <Button variant="quiet" disabled={disabled || index === data.plan.exercises.length - 1} aria-label={`Move ${exercise.exerciseName} down`} onClick={() => _mutate("move_down", new FormData(), exercise.id)}>Down</Button>
+                      <Button variant="quiet" disabled={disabled} aria-label={`Remove ${exercise.exerciseName}`} onClick={() => _mutate("remove", new FormData(), exercise.id)}>Remove</Button>
+                    </div>
+                    <form aria-label={`Configure ${exercise.exerciseName}`} onSubmit={(event) => {
+                      event.preventDefault(); void _mutate("save", new FormData(event.currentTarget), exercise.id);
+                    }}>
+                      <fieldset disabled={disabled}>
+                        <legend className="sr-only">{exercise.exerciseName} settings</legend>
+                        <PlanConfigFields prefix={exercise.id} draft={drafts[exercise.id] ?? toExerciseDraft(exercise.config)} onChange={(draft) => _draft(exercise.id, draft)} />
+                        <div className="v2-actions">
+                          <Button type="submit" disabled={disabled || !drafts[exercise.id]}>Save exercise</Button>
+                          {drafts[exercise.id] && <Button variant="quiet" onClick={() => _draft(exercise.id, toExerciseDraft(exercise.config))}>Discard edits</Button>}
+                        </div>
+                      </fieldset>
+                    </form>
                   </div>
                 </div>
-                <form aria-label={`Configure ${exercise.exerciseName}`} onSubmit={(event) => {
-                  event.preventDefault(); void _mutate("save", new FormData(event.currentTarget), exercise.id);
-                }}>
-                  <fieldset disabled={disabled}>
-                    <legend className="sr-only">{exercise.exerciseName} settings</legend>
-                    <PlanConfigFields prefix={exercise.id} draft={drafts[exercise.id] ?? toExerciseDraft(exercise.config)} onChange={(draft) => _draft(exercise.id, draft)} />
-                    <div className="v2-actions">
-                      <Button type="submit" disabled={disabled || !drafts[exercise.id]}>Save exercise</Button>
-                      {drafts[exercise.id] && <Button variant="quiet" onClick={() => _draft(exercise.id, toExerciseDraft(exercise.config))}>Discard edits</Button>}
-                    </div>
-                  </fieldset>
-                </form>
               </Card>
             </li>
           ))}
@@ -171,7 +189,7 @@ export function PlanEditor({ initialData }: { initialData: PlanEditorData }) {
                 <ExercisePicker exercises={available} selectedId={selectedId} query={query} disabled={disabled}
                   onQueryChange={(value) => { setQuery(value); setSelectedId(""); setMessage(null); }}
                   onSelect={(exercise) => { setSelectedId(exercise.id); setQuery(exercise.name); setMessage(null); }} />
-                <PlanConfigFields prefix="new-exercise" draft={addDraft} onChange={(draft) => { setAddDraft(draft); setMessage(null); }} />
+                {selectedId && <PlanConfigFields prefix="new-exercise" draft={addDraft} onChange={(draft) => { setAddDraft(draft); setMessage(null); }} />}
                 <div className="v2-actions">
                   <Button type="submit" disabled={disabled || !available.some((exercise) => exercise.id === selectedId)}>Add to plan</Button>
                   {addDirty && <Button variant="quiet" onClick={() => { setSelectedId(""); setQuery(""); setAddDraft(EMPTY_ADD_DRAFT); setMessage(null); }}>Discard new exercise</Button>}

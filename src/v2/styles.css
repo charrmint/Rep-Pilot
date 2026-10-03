@@ -1215,10 +1215,11 @@
   scroll-margin-top: 100px;
 }
 
-/* Ordered plan prescriptions stay expanded and follow workout order. */
+/* Compact disclosures retain each exercise's draft independently. */
 .v2-plan-editor,
 .v2-plan-editor-list,
 .v2-plan-exercise-card,
+.v2-plan-exercise-body,
 .v2-plan-exercise-card fieldset,
 .v2-plan-name-form {
   display: grid;
@@ -1229,23 +1230,33 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  gap: 24px;
 }
-.v2-plan-editor-list > li,
-.v2-plan-exercise-heading > div {
-  min-width: 0;
-}
-.v2-plan-exercise-heading {
+.v2-plan-editor-list > li { min-width: 0; }
+.v2-plan-exercise-toggle {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid var(--v2-line);
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.v2-plan-exercise-heading h3 {
-  overflow-wrap: anywhere;
+.v2-plan-exercise-toggle span { min-width: 0; overflow-wrap: anywhere; }
+.v2-plan-exercise-toggle svg { flex-shrink: 0; }
+.v2-plan-exercise-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+.v2-plan-exercise-toggle:disabled { cursor: wait; }
+.v2-plan-exercise-toggle:hover:not(:disabled) { color: var(--v2-brand-strong); }
+.v2-plan-exercise-summary p { margin: 4px 0 0; }
+.v2-plan-draft-status { color: var(--v2-text); }
+.v2-plan-exercise-body {
+  padding-top: 16px;
+  border-top: 1px solid var(--v2-line);
 }
 .v2-plan-exercise-card fieldset {
   border: 0;
