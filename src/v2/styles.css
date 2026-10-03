@@ -1263,19 +1263,22 @@
   margin: 0;
   padding: 0;
 }
-.v2-plan-config {
+.v2-plan-config { display: grid; gap: 12px; min-width: 0; }
+.v2-plan-config-reps,
+.v2-plan-config-weight {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
+  gap: 8px;
+  width: 100%;
+  max-width: 24rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 4.5rem), 1fr));
 }
-.v2-plan-config-help {
-  grid-column: 1 / -1;
+.v2-plan-config-weight {
+  max-width: 20rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr));
 }
-@media (min-width: 600px) {
-  .v2-plan-config {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
+.v2-plan-config-increment { width: min(100%, 10rem); }
+.v2-plan-config .v2-input { min-width: 0; min-height: 44px; font-size: 1rem; }
+.v2-plan-config-help { margin: 0; }
 .v2-search-picker {
   display: grid;
   gap: 8px;
