@@ -24,6 +24,13 @@ const base: PlanEditorData = {
     { id: "old", name: "Old lift", isArchived: true, isSystemExercise: false },
   ],
 };
+function _renderExpanded(ui: Parameters<typeof render>[0]) {
+  const result = render(ui);
+  for (const button of screen.queryAllByRole("button", { expanded: false })) {
+    if (button.hasAttribute("aria-controls") && button.classList.contains("v2-plan-exercise-toggle")) fireEvent.click(button);
+  }
+  return result;
+}
 function _form(name: string) { return screen.getByRole("form", { name }); }
 function _sets(name: string) { return within(_form(`Configure ${name}`)).getByLabelText("Sets"); }
 function _success(data = base): PlanMutationResult { return { status: "success", data, message: "Saved." }; }
@@ -31,7 +38,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 beforeEach(() => { vi.resetAllMocks(); vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success()); });
 
 it("shows matching active unconfigured exercises and clears selection when searching again", () => {
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   const add = within(_form("Add exercise"));
   const search = add.getByRole("combobox", { name: "Exercise" });
   fireEvent.focus(search);
@@ -57,7 +64,7 @@ function _chooseExercise(name: string) {
 it("saves only one exercise, preserving other drafts and entered units/increments", async () => {
   const saved = { ...base, plan: { ...base.plan, exercises: base.plan.exercises.map((exercise, i) => i ? exercise : { ...exercise, config: { ...config, targetSets: 4 } }) } };
   vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success(saved));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
   fireEvent.change(_sets("Cable row"), { target: { value: "5" } });
   fireEvent.submit(_form("Configure Bench press"));
@@ -71,7 +78,7 @@ it("saves only one exercise, preserving other drafts and entered units/increment
 it("serializes repeated and competing mutations while a save is pending", async () => {
   let finish!: (result: PlanMutationResult) => void;
   vi.mocked(mutateV2PlanExercise).mockReturnValue(new Promise(resolve => { finish = resolve; }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
   act(() => { fireEvent.submit(_form("Configure Bench press")); fireEvent.submit(_form("Configure Cable row")); });
   expect(mutateV2PlanExercise).toHaveBeenCalledOnce();
@@ -82,7 +89,7 @@ it("serializes repeated and competing mutations while a save is pending", async 
 });
 it("keeps drafts attached to exercise IDs after reorder", async () => {
   vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success({ ...base, plan: { ...base.plan, exercises: [...base.plan.exercises].reverse() } }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   expect(screen.getByRole("button", { name: "Move Bench press up" })).toBeDisabled();
   expect(screen.getByRole("button", { name: "Move Cable row down" })).toBeDisabled();
   fireEvent.change(_sets("Bench press"), { target: { value: "7" } });
@@ -95,7 +102,7 @@ it("keeps drafts attached to exercise IDs after reorder", async () => {
 it("confirms removal and retains unrelated drafts", async () => {
   const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
   vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success({ ...base, plan: { ...base.plan, exercises: [base.plan.exercises[1]] } }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
   fireEvent.change(_sets("Cable row"), { target: { value: "6" } });
   fireEvent.click(screen.getByRole("button", { name: "Remove Bench press" }));
@@ -111,7 +118,7 @@ it("confirms removal and retains unrelated drafts", async () => {
 it("adds with chosen settings and removes the persisted exercise from the picker", async () => {
   const added = { ...base.plan.exercises[0], id: "squat-row", exerciseId: "squat", exerciseName: "Squat", position: 3 };
   vi.mocked(mutateV2PlanExercise).mockResolvedValue(_success({ ...base, plan: { ...base.plan, exercises: [...base.plan.exercises, added] } }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   const add = within(_form("Add exercise"));
   _chooseExercise("Squat");
   fireEvent.change(add.getByLabelText("Weight unit"), { target: { value: "kg" } });
@@ -122,12 +129,15 @@ it("adds with chosen settings and removes the persisted exercise from the picker
   expect(screen.getByRole("heading", { name: "Squat" })).toBeInTheDocument();
   fireEvent.focus(add.getByRole("combobox", { name: "Exercise" }));
   expect(add.queryByRole("option", { name: /Squat/ })).not.toBeInTheDocument();
+  expect(add.queryByLabelText("Starting weight")).not.toBeInTheDocument();
+  _chooseExercise("Cable curl");
   expect(add.getByLabelText("Starting weight")).toHaveValue(0);
+  fireEvent.change(add.getByRole("combobox", { name: "Exercise" }), { target: { value: "" } });
   expect(add.getByLabelText("Exercise")).toHaveValue("");
 });
 it("retains invalid and blank values after failed saves and supports discard", async () => {
   vi.mocked(mutateV2PlanExercise).mockResolvedValue({ status: "error", data: base, message: "Fill in every exercise setting." });
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "" } });
   fireEvent.submit(_form("Configure Bench press"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Fill in every");
@@ -138,7 +148,7 @@ it("retains invalid and blank values after failed saves and supports discard", a
 it("locks after failed recovery, keeps drafts, and reloads before allowing retry", async () => {
   vi.mocked(mutateV2PlanExercise).mockRejectedValue(new Error("network"));
   vi.mocked(reloadV2Plan).mockRejectedValueOnce(new Error("offline")).mockResolvedValueOnce(base);
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "6" } });
   fireEvent.submit(_form("Configure Bench press"));
   const check = await screen.findByRole("button", { name: "Check saved plan" });
@@ -153,7 +163,7 @@ it("locks after failed recovery, keeps drafts, and reloads before allowing retry
 it("recovers an uncertain add without offering to add it again", async () => {
   vi.mocked(mutateV2PlanExercise).mockRejectedValue(new Error("lost response"));
   vi.mocked(reloadV2Plan).mockResolvedValue({ ...base, plan: { ...base.plan, exercises: [...base.plan.exercises, { ...base.plan.exercises[0], id: "squat-row", exerciseId: "squat", exerciseName: "Squat" }] } });
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   _chooseExercise("Squat");
   fireEvent.submit(_form("Add exercise"));
   await screen.findByRole("heading", { name: "Squat" });
@@ -165,7 +175,7 @@ it("recovers an uncertain add without offering to add it again", async () => {
 it("uses one leave warning for name and exercise drafts and retains them through name refresh", async () => {
   const confirm = vi.spyOn(window, "confirm").mockReturnValue(false);
   vi.mocked(renameV2Plan).mockResolvedValue({ status: "success", plan: { id: "plan", name: "Renamed" } });
-  const { rerender } = render(<><PlanEditor initialData={base} /><a href="/v2/library">Library</a></>);
+  const { rerender } = _renderExpanded(<><PlanEditor initialData={base} /><a href="/v2/library">Library</a></>);
   fireEvent.change(screen.getByLabelText("Plan name"), { target: { value: "Renamed" } });
   fireEvent.change(_sets("Bench press"), { target: { value: "5" } });
   fireEvent.click(screen.getByRole("link", { name: "Library" }));
@@ -176,7 +186,7 @@ it("uses one leave warning for name and exercise drafts and retains them through
   expect(_sets("Bench press")).toHaveValue(5);
 });
 it("handles an empty plan and an exhausted exercise catalog", () => {
-  render(<PlanEditor initialData={{ plan: { ...base.plan, exercises: [] }, availableExercises: [] }} />);
+  _renderExpanded(<PlanEditor initialData={{ plan: { ...base.plan, exercises: [] }, availableExercises: [] }} />);
   expect(screen.getByText(/No exercises yet/)).toBeInTheDocument();
   expect(screen.getByText(/no active exercises/)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Add to plan" })).not.toBeInTheDocument();
@@ -184,7 +194,7 @@ it("handles an empty plan and an exhausted exercise catalog", () => {
 
 it("keeps the editor mounted without refreshing when server recovery is unavailable", async () => {
   vi.mocked(mutateV2PlanExercise).mockResolvedValue({ status: "error", data: null, message: "Save could not be confirmed." });
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
   fireEvent.submit(_form("Configure Bench press"));
   await screen.findByRole("button", { name: "Check saved plan" });
@@ -195,7 +205,7 @@ it("keeps the editor mounted without refreshing when server recovery is unavaila
 it("blocks exercise submissions while a name save is in flight", async () => {
   let finish!: (result: Awaited<ReturnType<typeof renameV2Plan>>) => void;
   vi.mocked(renameV2Plan).mockReturnValue(new Promise(resolve => { finish = resolve; }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.change(screen.getByLabelText("Plan name"), { target: { value: "Renamed" } });
   act(() => { fireEvent.submit(_form("Rename plan")); fireEvent.submit(_form("Configure Bench press")); });
   expect(mutateV2PlanExercise).not.toHaveBeenCalled();
@@ -208,7 +218,7 @@ it("confirms archive, keeps the plan mounted, and restores it within v2", async 
   const confirm = vi.spyOn(window, "confirm").mockReturnValueOnce(false).mockReturnValueOnce(true);
   const archived = { ...base, plan: { ...base.plan, isArchived: true } };
   vi.mocked(mutateV2PlanArchive).mockResolvedValueOnce({ status: "success", data: archived, message: "Plan archived." }).mockResolvedValueOnce({ status: "success", data: base, message: "Plan restored." });
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
   expect(mutateV2PlanArchive).not.toHaveBeenCalled();
   fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
@@ -224,7 +234,7 @@ it("confirms archive, keeps the plan mounted, and restores it within v2", async 
   expect(router.refresh).toHaveBeenCalledTimes(2);
 });
 it("requires name, exercise, and new-exercise drafts to be resolved before archiving", () => {
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   const archive = screen.getByRole("button", { name: "Archive plan" });
   fireEvent.change(screen.getByLabelText("Plan name"), { target: { value: "New name" } });
   expect(archive).toBeDisabled();
@@ -244,7 +254,7 @@ it("locks competing mutations during archive and reports errors beside the contr
   vi.spyOn(window, "confirm").mockReturnValue(true);
   let finish!: (result: PlanMutationResult) => void;
   vi.mocked(mutateV2PlanArchive).mockReturnValue(new Promise(resolve => { finish = resolve; }));
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
   expect(screen.getByRole("button", { name: "Checking plan…" })).toBeDisabled();
   expect(screen.getByLabelText("Plan name")).toBeDisabled();
@@ -260,7 +270,7 @@ it("recovers persisted archive status after a lost response before offering anot
   vi.spyOn(window, "confirm").mockReturnValue(true);
   vi.mocked(mutateV2PlanArchive).mockRejectedValue(new Error("response lost"));
   vi.mocked(reloadV2Plan).mockResolvedValue({ ...base, plan: { ...base.plan, isArchived: true } });
-  render(<PlanEditor initialData={base} />);
+  _renderExpanded(<PlanEditor initialData={base} />);
   fireEvent.click(screen.getByRole("button", { name: "Archive plan" }));
   await screen.findByRole("button", { name: "Restore plan" });
   expect(mutateV2PlanArchive).toHaveBeenCalledOnce();
@@ -269,7 +279,7 @@ it("recovers persisted archive status after a lost response before offering anot
 it("requires recovery after an unverified restore and shows the recovered active status", async () => {
   vi.mocked(mutateV2PlanArchive).mockResolvedValue({ status: "error", data: null, message: "Status could not be verified." });
   vi.mocked(reloadV2Plan).mockResolvedValue(base);
-  render(<PlanEditor initialData={{ ...base, plan: { ...base.plan, isArchived: true } }} />);
+  _renderExpanded(<PlanEditor initialData={{ ...base, plan: { ...base.plan, isArchived: true } }} />);
   fireEvent.click(screen.getByRole("button", { name: "Restore plan" }));
   const check = await screen.findByRole("button", { name: "Check saved plan" });
   expect(_sets("Bench press")).toBeDisabled();
@@ -277,4 +287,53 @@ it("requires recovery after an unverified restore and shows the recovered active
   expect(router.refresh).not.toHaveBeenCalled();
   fireEvent.click(check);
   await waitFor(() => expect(screen.getByRole("button", { name: "Archive plan" })).toBeEnabled());
+});
+
+it("starts collapsed, retains drafts across toggles, and allows independent expansion", () => {
+  render(<PlanEditor initialData={base} />);
+  const bench = screen.getByRole("button", { name: "Bench press" });
+  const row = screen.getByRole("button", { name: "Cable row" });
+  expect(bench).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("form", { name: "Configure Bench press" })).not.toBeInTheDocument();
+  expect(bench).toHaveAccessibleDescription("3 sets · 8–12 reps · 20 kg");
+  expect(screen.queryByRole("button", { name: "Remove Bench press" })).not.toBeInTheDocument();
+  fireEvent.click(bench);
+  fireEvent.change(_sets("Bench press"), { target: { value: "6" } });
+  fireEvent.click(row);
+  expect(bench).toHaveAttribute("aria-expanded", "true");
+  expect(row).toHaveAttribute("aria-expanded", "true");
+  fireEvent.click(bench);
+  expect(bench).toHaveAccessibleDescription(expect.stringContaining("Unsaved changes"));
+  expect(screen.getByRole("button", { name: "Archive plan" })).toBeDisabled();
+  fireEvent.click(bench);
+  expect(_sets("Bench press")).toHaveValue(6);
+  fireEvent.click(within(_form("Configure Bench press")).getByRole("button", { name: "Discard edits" }));
+  expect(bench).not.toHaveAccessibleDescription(expect.stringContaining("Unsaved changes"));
+});
+it("reveals new exercise settings after selection and retains them when searching again", () => {
+  render(<PlanEditor initialData={base} />);
+  const add = within(_form("Add exercise"));
+  expect(add.queryByLabelText("Starting weight")).not.toBeInTheDocument();
+  _chooseExercise("Squat");
+  fireEvent.change(add.getByLabelText("Starting weight"), { target: { value: "30" } });
+  fireEvent.change(add.getByRole("combobox", { name: "Exercise" }), { target: { value: "Cable" } });
+  expect(add.queryByLabelText("Starting weight")).not.toBeInTheDocument();
+  _chooseExercise("Cable curl");
+  expect(add.getByLabelText("Starting weight")).toHaveValue(30);
+});
+it("keeps the submitted panel visible during saving and after a rejected save", async () => {
+  let finish!: (result: PlanMutationResult) => void;
+  vi.mocked(mutateV2PlanExercise).mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  render(<PlanEditor initialData={base} />);
+  const toggle = screen.getByRole("button", { name: "Bench press" });
+  fireEvent.click(toggle);
+  fireEvent.change(_sets("Bench press"), { target: { value: "4" } });
+  fireEvent.submit(_form("Configure Bench press"));
+  expect(toggle).toBeDisabled();
+  fireEvent.click(toggle);
+  await act(async () => finish({ status: "error", data: base, message: "Unable to save. Try again." }));
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(toggle).toBeEnabled();
+  expect(_sets("Bench press")).toHaveValue(4);
+  expect(screen.getByRole("alert")).toHaveTextContent("Unable to save");
 });

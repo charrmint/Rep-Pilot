@@ -222,9 +222,13 @@ same app-link and browser-unload warning as plan forms; browser history
 navigation is not intercepted. The forms and row actions extend the mock-up’s
 Library placeholder using existing v2 tokens and controls.
 
-Plan exercise cards remain expanded in workout order, with separated headings
-and actions. Prescription fields use a single column on narrow screens and
-three columns on wider screens.
+Plan exercise cards start collapsed in workout order, showing saved sets, rep
+range, and starting weight. Each header independently reveals its settings and
+actions. Collapsing retains drafts and exposes an Unsaved changes label; save
+requests keep panels open until feedback arrives. Sets and rep bounds share a
+compact group, starting weight and unit share another, and increment stays
+short. Groups wrap when available width or larger text requires it. New-exercise
+settings appear after selection, with drafts retained while searching again.
 
 ## History browsing
 
